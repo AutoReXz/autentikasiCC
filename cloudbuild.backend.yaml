@@ -1,10 +1,8 @@
 steps:
   # 1. Build Docker image untuk backend
   - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "--progress=plain", "-t", "gcr.io/$PROJECT_ID/notes-app-backend", "."]
+    args: ["build", "-t", "gcr.io/$PROJECT_ID/notes-app-backend", "."]
     dir: "be"
-    id: "build-backend"
-    waitFor: ["-"]  # Start immediately
 
   # 2. Push ke Container Registry / Artifact Registry
   - name: "gcr.io/cloud-builders/docker"
@@ -27,21 +25,9 @@ steps:
         "--region",
         "us-central1",
         "--allow-unauthenticated",
-        "--set-env-vars",
-        "ENV_BUCKET_NAME=${_ENV_BUCKET_NAME},ENV_FILE_PATH=${_ENV_FILE_PATH}",
-        # Gunakan service account hanya jika parameter _USE_SERVICE_ACCOUNT=true
-        # Jika _USE_SERVICE_ACCOUNT=false, tidak akan menggunakan --service-account
-        ${"--service-account=${_SERVICE_ACCOUNT_EMAIL}":"${_USE_SERVICE_ACCOUNT}"},
       ]
 
 # Log hanya akan disimpan di Google Cloud Logging
 # Log tidak akan disimpan di Google Cloud Storage (butuh hak akses).
 options:
   logging: CLOUD_LOGGING_ONLY
-  
-# Substitusi untuk variabel konfigurasi
-substitutions:
-  _ENV_BUCKET_NAME: "my-env-bucket"             # Nama bucket default (ganti saat deployment)
-  _ENV_FILE_PATH: "config/.env"                 # Path file .env di bucket (ganti saat deployment)
-  _SERVICE_ACCOUNT_EMAIL: "notes-app@${PROJECT_ID}.iam.gserviceaccount.com"  # Service account email
-  _USE_SERVICE_ACCOUNT: "false"                 # Gunakan service account atau tidak (true/false)
