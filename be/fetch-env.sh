@@ -8,15 +8,9 @@ LOCAL_ENV_PATH=".env"
 
 echo "Attempting to fetch environment file from gs://${BUCKET_NAME}/${ENV_FILE_PATH}..."
 
-# Check if the google cloud SDK is available
-if command -v gsutil &> /dev/null; then
-    # Using gsutil if available
-    gsutil cp gs://${BUCKET_NAME}/${ENV_FILE_PATH} ${LOCAL_ENV_PATH} || {
-        echo "Failed to fetch environment file using gsutil. Using local .env if available."
-    }
-else
-    # Use python if gsutil is not available
-    /venv/bin/python3 -c "
+# Using Python Google Cloud Storage client
+echo "Using Python client to download environment file..."
+/venv/bin/python3 -c "
 import os
 from google.cloud import storage
 try:
@@ -28,7 +22,6 @@ try:
 except Exception as e:
     print(f'Error downloading .env file: {e}. Using local .env if available.')
 "
-fi
 
 # Verify if the env file was downloaded
 if [ -f ${LOCAL_ENV_PATH} ]; then
