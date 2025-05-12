@@ -29,8 +29,9 @@ steps:
         "--allow-unauthenticated",
         "--set-env-vars",
         "ENV_BUCKET_NAME=${_ENV_BUCKET_NAME},ENV_FILE_PATH=${_ENV_FILE_PATH}",
-        "--service-account",
-        "${_SERVICE_ACCOUNT_EMAIL}",
+        # Gunakan service account hanya jika parameter _USE_SERVICE_ACCOUNT=true
+        # Jika _USE_SERVICE_ACCOUNT=false, tidak akan menggunakan --service-account
+        ${"--service-account=${_SERVICE_ACCOUNT_EMAIL}":"${_USE_SERVICE_ACCOUNT}"},
       ]
 
 # Log hanya akan disimpan di Google Cloud Logging
@@ -40,6 +41,7 @@ options:
   
 # Substitusi untuk variabel konfigurasi
 substitutions:
-  _ENV_BUCKET_NAME: "my-env-bucket"  # Nama bucket default (ganti saat deployment)
-  _ENV_FILE_PATH: "config/.env"      # Path file .env di bucket (ganti saat deployment)
+  _ENV_BUCKET_NAME: "my-env-bucket"             # Nama bucket default (ganti saat deployment)
+  _ENV_FILE_PATH: "config/.env"                 # Path file .env di bucket (ganti saat deployment)
   _SERVICE_ACCOUNT_EMAIL: "notes-app@${PROJECT_ID}.iam.gserviceaccount.com"  # Service account email
+  _USE_SERVICE_ACCOUNT: "false"                 # Gunakan service account atau tidak (true/false)
