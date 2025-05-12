@@ -13,13 +13,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configure CORS to allow requests from any origin with credentials
+// Configure CORS to allow requests from frontend
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? process.env.FRONTEND_URL : '*',
+  origin: process.env.FRONTEND_URL || 'http://localhost:8080', // Use FRONTEND_URL from .env or default
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true // Allow cookies to be sent with requests
 }));
+
+// Add a pre-flight handler for all routes
+app.options('*', cors());
 
 app.use(express.json());
 app.use(cookieParser()); // Parse cookies in requests
@@ -28,8 +31,12 @@ app.use(cookieParser()); // Parse cookies in requests
 app.use('/api', noteRoutes);
 app.use('/api/auth', authRoutes);
 
-// Health check endpoint
+// Health check endpoint - buat dua endpoint supaya bisa diakses dengan /api/health dan /health
 app.get('/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 

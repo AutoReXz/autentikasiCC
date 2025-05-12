@@ -2,6 +2,7 @@
 import jwt from 'jsonwebtoken';
 import { User } from '../models/index.js';
 import sequelize from '../config/database.js';
+import { Op } from 'sequelize';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -34,11 +35,10 @@ const generateRefreshToken = (user) => {
 const register = async (req, res) => {
     try {
         const { username, email, password } = req.body;
-        
-        // Check if user already exists
+          // Check if user already exists
         const existingUser = await User.findOne({ 
             where: { 
-                [sequelize.Op.or]: [{ username }, { email }]
+                [Op.or]: [{ username }, { email }]
             } 
         });
         
