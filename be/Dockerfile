@@ -1,9 +1,10 @@
 FROM node:18-alpine
 
 # Install Google Cloud SDK and dependencies
-RUN apk --no-cache add python3 py3-pip curl bash
-RUN pip3 install --no-cache-dir --upgrade pip && \
-    pip3 install --no-cache-dir google-cloud-storage
+RUN apk --no-cache add python3 py3-pip curl bash google-cloud-sdk
+# Install python packages in a virtual environment
+RUN python3 -m venv /venv && \
+    /venv/bin/pip install --no-cache-dir google-cloud-storage
 
 # Set working directory
 WORKDIR /usr/src/app

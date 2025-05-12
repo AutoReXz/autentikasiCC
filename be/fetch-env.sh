@@ -16,7 +16,7 @@ if command -v gsutil &> /dev/null; then
     }
 else
     # Use python if gsutil is not available
-    python3 -c "
+    /venv/bin/python3 -c "
 import os
 from google.cloud import storage
 try:
