@@ -15,6 +15,10 @@ function setupAuth() {
         showAuthenticatedUI();
         // Setup AJAX with auth header
         setupAjaxAuth();
+        // Load user's notes if function exists
+        if (typeof getListNotes === 'function') {
+            getListNotes();
+        }
     } else {
         // User is not logged in
         showUnauthenticatedUI();
@@ -201,4 +205,9 @@ function showUnauthenticatedUI() {
 function showLoginModal() {
     $('#loginModal').removeClass('hidden').addClass('flex');
     $('body').addClass('modal-open');
+}
+
+// Show toast notification
+function showToast(message, type = 'info') {
+    API_CONFIG.showToast(message, type);
 }

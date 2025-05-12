@@ -5,6 +5,13 @@ let currentCategory = 'all';
 let currentView = 'grid'; // grid or list
 let connectionAttempts = 0;
 
+/**
+ * Show toast notification
+ */
+function showToast(message, type = 'info') {
+    API_CONFIG.showToast(message, type);
+}
+
 // Document ready function
 $(document).ready(function() {
     // Initialize API_URL from utils
@@ -88,10 +95,16 @@ function connectToBackend() {
  * Test connection to the backend
  */
 function testConnection() {
-    console.log('Testing connection to:', `${API_URL}/health`);
+    // Testing health endpoint through our proxy
+    const healthEndpoint = `${API_URL}/health`;
+    console.log('Testing connection to:', healthEndpoint);
     return $.ajax({
-        url: `${API_URL}/health`,
+        url: healthEndpoint,
         method: 'GET',
+        timeout: 10000, // Increase timeout to 10 seconds
+        beforeSend: function() {
+            console.log('Sending health check request...');
+        },
         timeout: 5000,
         headers: {
             'Accept': 'application/json',
@@ -100,530 +113,579 @@ function testConnection() {
 }
 
 /**
- * Attach all event listeners
+ * Setup event listeners for the application
  */
 function setupEventListeners() {
-    // New note buttons
-    $('#newNoteBtnSidebar, #newNoteBtnTop, #newNoteBtnEmpty').on('click', showAddNoteModal);
+    // New Note Buttons
+    $('#newNoteBtnTop, #newNoteBtnSidebar, #newNoteBtnEmpty').on('click', function() {
+        showNoteModal('add');
+    });
     
-    // Modal interactions
-    $('#cancelBtn').on('click', closeNoteModal);
-    $('#noteForm').on('submit', handleFormSubmit);
-    $('#cancelDeleteBtn').on('click', closeDeleteModal);
-    $('#confirmDeleteBtn').on('click', confirmDelete);
+    // Cancel note modal
+    $('#cancelBtn').on('click', function() {
+        $('#noteModal').addClass('hidden').removeClass('flex');
+        $('body').removeClass('modal-open');
+    });
+    
+    // Save note (create or update)
+    $('#noteForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const noteId = $('#noteId').val();
+        const isEdit = noteId !== '';
+        
+        if (isEdit) {
+            updateNote(noteId);
+        } else {
+            createNote();
+        }
+    });
+    
+    // Cancel delete
+    $('#cancelDeleteBtn').on('click', function() {
+        $('#deleteModal').addClass('hidden').removeClass('flex');
+        $('body').removeClass('modal-open');
+    });
+    
+    // Confirm delete
+    $('#confirmDeleteBtn').on('click', function() {
+        const noteId = $('#deleteNoteId').val();
+        deleteNote(noteId);
+    });
     
     // Search functionality
     $('#searchNotes, #searchNotesTop').on('input', function() {
         const query = $(this).val().toLowerCase();
-        filterNotes(currentCategory, query);
-        
-        // Sync the two search boxes
-        $('#searchNotes, #searchNotesTop').val(query);
+        if (this.id === 'searchNotes') {
+            $('#searchNotesTop').val(query);
+        } else {
+            $('#searchNotes').val(query);
+        }
+        filterNotes(query);
     });
     
-    // Category filtering
+    // Toggle view (grid/list)
+    $('#viewToggleBtn').on('click', function() {
+        toggleView();
+    });
+    
+    // Category filters
     $('.category-filter').on('click', function(e) {
         e.preventDefault();
         const category = $(this).data('category');
-        
-        // Update active state
-        $('.category-filter').removeClass('active');
-        $(this).addClass('active');
-        
-        // Update current category display
-        currentCategory = category;
-        updateCurrentCategoryDisplay();
-        
-        // Filter notes
-        filterNotes(category, $('#searchNotes').val().toLowerCase());
+        filterByCategory(category);
     });
     
-    // View toggle (grid/list)
-    $('#viewToggleBtn').on('click', function() {
-        if (currentView === 'grid') {
-            currentView = 'list';
-            $('#notesList').addClass('list-view');
-            $(this).html('<i class="fas fa-grip"></i>');
-        } else {
-            currentView = 'grid';
-            $('#notesList').removeClass('list-view');
-            $(this).html('<i class="fas fa-th-list"></i>');
-        }
-    });
-}
-
-/**
- * Setup sidebar toggle functionality
- */
-function setupSidebar() {
+    // Sidebar toggle (mobile)
     $('#sidebarToggleTop').on('click', function() {
         $('#sidebar').toggleClass('sidebar-hidden sidebar-visible');
     });
-    
-    // Close sidebar when clicking outside on mobile
-    $(document).on('click', function(e) {
-        if ($(window).width() < 1024) {
-            if (!$(e.target).closest('#sidebar').length && 
-                !$(e.target).closest('#sidebarToggleTop').length) {
-                $('#sidebar').removeClass('sidebar-visible').addClass('sidebar-hidden');
+}
+
+/**
+ * Setup sidebar functionality
+ */
+function setupSidebar() {
+    // Active category handling
+    $('.category-filter').on('click', function() {
+        $('.category-filter').removeClass('active bg-gray-700').addClass('hover:bg-gray-700');
+        $(this).addClass('active bg-gray-700').removeClass('hover:bg-gray-700');
+    });
+}
+
+/**
+ * Get all notes from the API
+ */
+async function getListNotes() {
+    try {
+        const response = await $.ajax({
+            url: `${API_URL}/notes`,
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
             }
-        }
-    });
-}
-
-/**
- * Fetches all notes from the API
- */
-function getListNotes() {
-    // If not authenticated, don't fetch notes
-    if (!accessToken) {
-        showUnauthenticatedUI();
-        return;
-    }
-    
-    showLoading();
-
-    // Fetch notes using AJAX with authentication
-    $.ajax({
-        url: `${API_URL}/notes`,
-        method: 'GET',
-        headers: {
-            'Accept': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
-        },
-        success: function(notes) {
-            allNotes = notes;
-            updateNotesCounters();
-            displayNotes(notes);
-            hideLoading();
-        },
-        error: function(error) {
-            console.error('Error fetching notes:', error);
-            $('#notesList').html(`
-                <div class="col-span-full p-8 bg-red-50 rounded-lg border border-red-200 text-center">
-                    <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4"></i>
-                    <h3 class="text-xl font-bold text-red-700 mb-2">Connection Error</h3>
-                    <p class="text-red-600 mb-4">Failed to fetch notes from backend server.</p>
-                    <button id="retryFetch" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
-                        Retry
-                    </button>
-                </div>
-            `);
-            hideLoading();
-            $('#retryFetch').on('click', getListNotes);
-        }
-    });
-}
-
-/**
- * Updates all counter displays
- */
-function updateNotesCounters() {
-    // Total notes count
-    $('#totalNotesCount').text(allNotes.length);
-    
-    // Recent updates (last 7 days)
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    const recentNotes = allNotes.filter(note => new Date(note.updatedAt || note.createdAt) >= oneWeekAgo);
-    $('#recentUpdatesCount').text(recentNotes.length);
-    
-    // Category counts
-    $('#all-count').text(allNotes.length);
-    
-    // Get unique categories and count notes in each
-    const categories = ['work', 'personal', 'study'];
-    categories.forEach(category => {
-        const count = allNotes.filter(note => (note.category || 'work') === category).length;
-        $(`#${category}-count`).text(count);
-    });
-}
-
-/**
- * Updates the current category display in the header
- */
-function updateCurrentCategoryDisplay() {
-    if (currentCategory === 'all') {
-        $('#currentCategory').text('All Notes');
-    } else {
-        $('#currentCategory').text(
-            currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1) + ' Notes'
-        );
-    }
-}
-
-/**
- * Shows loading indicator
- */
-function showLoading() {
-    $('#notesList').html(`
-        <div class="flex items-center justify-center col-span-full py-12">
-            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-    `);
-    $('#emptyState').addClass('hidden');
-}
-
-/**
- * Hides loading indicator
- */
-function hideLoading() {
-    // Will be replaced by displayNotes or empty state
-}
-
-/**
- * Filters notes by category and search query
- * @param {string} category - Category to filter by
- * @param {string} query - Search query
- */
-function filterNotes(category, query = '') {
-    let filteredNotes = [...allNotes];
-    
-    // Filter by category
-    if (category && category !== 'all') {
-        filteredNotes = filteredNotes.filter(note => note.category === category);
-    }
-    
-    // Filter by search query
-    if (query) {
-        filteredNotes = filteredNotes.filter(note => 
-            note.title.toLowerCase().includes(query) || 
-            note.content.toLowerCase().includes(query)
-        );
-    }
-    
-    // Display filtered notes
-    displayNotes(filteredNotes);
-}
-
-/**
- * Displays the notes in the UI
- * @param {Array} notes - Array of note objects
- */
-function displayNotes(notes) {
-    // Clear the notes list
-    $('#notesList').empty();
-
-    // If no notes, display the empty state
-    if (!notes || notes.length === 0) {
-        // Show empty state with appropriate message
-        const message = currentCategory === 'all' 
-            ? 'You don\'t have any notes yet. Create your first note!'
-            : `You don't have any ${currentCategory} notes yet.`;
-            
-        $('#emptyState .text-gray-500').text(message);
-        $('#notesList').addClass('hidden');
-        $('#emptyState').removeClass('hidden');
-        return;
-    }
-
-    // Show notes list, hide empty state
-    $('#notesList').removeClass('hidden');
-    $('#emptyState').addClass('hidden');
-
-    // Get category colors
-    const categoryColors = {
-        work: {
-            bg: 'bg-blue-100',
-            text: 'text-blue-800',
-            icon: 'fa-briefcase'
-        },
-        personal: {
-            bg: 'bg-green-100',
-            text: 'text-green-800',
-            icon: 'fa-user'
-        },
-        study: {
-            bg: 'bg-purple-100',
-            text: 'text-purple-800',
-            icon: 'fa-book'
-        }
-    };
-
-    // Loop through and add each note as a card
-    notes.forEach(note => {
-        // Handle null or undefined category
-        const noteCat = note.category || 'work';
-        const categoryColor = categoryColors[noteCat] || categoryColors.work;
+        });
         
-        const noteCard = `
-            <div class="note-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg fade-in">
-                <div class="p-6">
-                    <div class="flex justify-between items-start mb-3">
-                        <h3 class="text-xl font-bold text-gray-800 truncate">${note.title}</h3>
-                        <span class="${categoryColor.bg} ${categoryColor.text} text-xs px-2 py-1 rounded-full flex items-center">
-                            <i class="fas ${categoryColor.icon} mr-1"></i>
-                            ${noteCat.charAt(0).toUpperCase() + noteCat.slice(1)}
-                        </span>
-                    </div>
-                    <p class="text-gray-600 note-content">${note.content}</p>
-                    <div class="flex justify-between mt-4 pt-3 border-t border-gray-100">
-                        <span class="text-gray-500 text-sm">
-                            <i class="far fa-clock mr-1"></i>
-                            ${formatDate(note.updatedAt || note.createdAt)}
-                        </span>
-                        <div class="flex space-x-2">
-                            <button class="btn-icon text-blue-500 hover:text-blue-700" onclick="showEditNoteModal(${note.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn-icon text-red-500 hover:text-red-700" onclick="showDeleteModal(${note.id})">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        $('#notesList').append(noteCard);
-    });
+        // Store notes globally
+        allNotes = response;
+        
+        // Update UI
+        updateNotesUI();
+        updateCategoryCounts();
+        
+    } catch (error) {
+        console.error('Error getting notes:', error);
+        if (error.status === 401) {
+            // Handle authentication error
+            showToast('Authentication required. Please login again.', 'error');
+        } else {
+            showToast('Failed to load notes. Please try again.', 'error');
+        }
+    }
 }
 
 /**
- * Format a date to a readable string
- * @param {string} dateString - ISO date string
- * @returns {string} - Formatted date
+ * Get notes by category
  */
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    const now = new Date();
-    
-    // If today, show time
-    if (date.toDateString() === now.toDateString()) {
-        return 'Today, ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+async function getNotesByCategory(category) {
+    if (category === 'all') {
+        return getListNotes();
     }
     
-    // If yesterday, show "Yesterday"
-    const yesterday = new Date();
-    yesterday.setDate(now.getDate() - 1);
-    if (date.toDateString() === yesterday.toDateString()) {
-        return 'Yesterday';
+    try {
+        const response = await $.ajax({
+            url: `${API_URL}/notes/category/${category}`,
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+        
+        // Store filtered notes
+        allNotes = response;
+        
+        // Update UI
+        updateNotesUI();
+        
+    } catch (error) {
+        console.error(`Error getting ${category} notes:`, error);
+        showToast(`Failed to load ${category} notes. Please try again.`, 'error');
     }
-    
-    // Otherwise show date
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
 /**
- * Shows the add note modal
+ * Get a single note by ID
  */
-function showAddNoteModal() {
+async function getNoteById(id) {
+    try {
+        return await $.ajax({
+            url: `${API_URL}/notes/${id}`,
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+    } catch (error) {
+        console.error('Error getting note:', error);
+        showToast('Failed to load note. Please try again.', 'error');
+        throw error;
+    }
+}
+
+/**
+ * Create a new note
+ */
+async function createNote() {
+    const title = $('#title').val();
+    const content = $('#content').val();
+    const category = $('#category').val();
+    
+    try {
+        // Show loading
+        $('#saveBtn').html('<i class="fas fa-spinner fa-spin"></i> Saving...').prop('disabled', true);
+        
+        const response = await $.ajax({
+            url: `${API_URL}/notes`,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            },
+            data: JSON.stringify({ title, content, category })
+        });
+        
+        // Close modal
+        $('#noteModal').addClass('hidden').removeClass('flex');
+        $('body').removeClass('modal-open');
+        
+        // Reset form
+        $('#noteForm')[0].reset();
+        
+        // Refresh notes list
+        getListNotes();
+        
+        // Show success message
+        showToast('Note created successfully!', 'success');
+        
+    } catch (error) {
+        console.error('Error creating note:', error);
+        showToast('Failed to create note. Please try again.', 'error');
+    } finally {
+        // Reset button
+        $('#saveBtn').html('Save Note').prop('disabled', false);
+    }
+}
+
+/**
+ * Update an existing note
+ */
+async function updateNote(id) {
+    const title = $('#title').val();
+    const content = $('#content').val();
+    const category = $('#category').val();
+    
+    try {
+        // Show loading
+        $('#saveBtn').html('<i class="fas fa-spinner fa-spin"></i> Saving...').prop('disabled', true);
+        
+        const response = await $.ajax({
+            url: `${API_URL}/notes/${id}`,
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+            },
+            data: JSON.stringify({ title, content, category })
+        });
+        
+        // Close modal
+        $('#noteModal').addClass('hidden').removeClass('flex');
+        $('body').removeClass('modal-open');
+        
+        // Reset form
+        $('#noteForm')[0].reset();
+        
+        // Refresh notes list
+        getListNotes();
+        
+        // Show success message
+        showToast('Note updated successfully!', 'success');
+        
+    } catch (error) {
+        console.error('Error updating note:', error);
+        showToast('Failed to update note. Please try again.', 'error');
+    } finally {
+        // Reset button
+        $('#saveBtn').html('Save Note').prop('disabled', false);
+    }
+}
+
+/**
+ * Delete a note
+ */
+async function deleteNote(id) {
+    try {
+        // Show loading
+        $('#confirmDeleteBtn').html('<i class="fas fa-spinner fa-spin"></i> Deleting...').prop('disabled', true);
+        
+        await $.ajax({
+            url: `${API_URL}/notes/${id}`,
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+        
+        // Close modal
+        $('#deleteModal').addClass('hidden').removeClass('flex');
+        $('body').removeClass('modal-open');
+        
+        // Refresh notes list
+        getListNotes();
+        
+        // Show success message
+        showToast('Note deleted successfully!', 'success');
+        
+    } catch (error) {
+        console.error('Error deleting note:', error);
+        showToast('Failed to delete note. Please try again.', 'error');
+    } finally {
+        // Reset button
+        $('#confirmDeleteBtn').html('Delete').prop('disabled', false);
+    }
+}
+
+/**
+ * Show add/edit note modal
+ */
+function showNoteModal(mode, noteId) {
     // Reset form
     $('#noteForm')[0].reset();
     $('#noteId').val('');
-    $('#modalTitle').text('Add New Note');
-    $('#saveBtn').text('Save Note');
     
-    // Show modal
-    $('#noteModal').removeClass('hidden').addClass('flex');
-    $('body').addClass('modal-open');
-    
-    // Focus on title input
-    setTimeout(() => {
-        $('#title').focus();
-    }, 100);
-}
-
-/**
- * Shows the edit note modal with pre-filled data
- * @param {number} id - Note ID
- */
-function showEditNoteModal(id) {
-    // Fetch note details with authentication
-    $.ajax({
-        url: `${API_URL}/notes/${id}`,
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${accessToken}`
-        },
-        success: function(note) {
-            // Fill form with note data
-            $('#noteId').val(note.id);
-            $('#title').val(note.title);
-            $('#content').val(note.content);
-            $('#category').val(note.category || 'work');
-            
-            // Update modal title and button
-            $('#modalTitle').text('Edit Note');
-            $('#saveBtn').text('Update Note');
-            
-            // Show modal
-            $('#noteModal').removeClass('hidden').addClass('flex');
-            $('body').addClass('modal-open');
-            
-            // Focus on title input
-            setTimeout(() => {
-                $('#title').focus();
-            }, 100);
-        },
-        error: function(error) {
-            console.error('Error fetching note details:', error);
-            showToast('Failed to load note details. Please try again.', 'error');
-        }
-    });
-}
-
-/**
- * Close the note form modal
- */
-function closeNoteModal() {
-    $('#noteModal').removeClass('flex').addClass('hidden');
-    $('body').removeClass('modal-open');
-}
-
-/**
- * Handles form submission for both adding and editing notes
- * @param {Event} e - Submit event
- */
-function handleFormSubmit(e) {
-    e.preventDefault();
-    
-    const noteId = $('#noteId').val();
-    const title = $('#title').val().trim();
-    const content = $('#content').val().trim();
-    const category = $('#category').val() || 'work';  // Default to 'work' if not selected
-    
-    // Validate inputs
-    if (!title || !content) {
-        showToast('Please fill in all required fields.', 'error');
-        return;
-    }
-    
-    const noteData = {
-        title,
-        content,
-        category
-    };
-    
-    if (noteId) {
-        // If noteId exists, it's an update
-        editNote(noteId, noteData);
+    if (mode === 'edit' && noteId) {
+        // Set modal title
+        $('#modalTitle').text('Edit Note');
+        
+        // Get note data
+        getNoteById(noteId)
+            .then(note => {
+                // Fill form with note data
+                $('#noteId').val(note.id);
+                $('#title').val(note.title);
+                $('#content').val(note.content);
+                $('#category').val(note.category || 'work');
+                
+                // Show modal
+                $('#noteModal').removeClass('hidden').addClass('flex');
+                $('body').addClass('modal-open');
+            })
+            .catch(error => {
+                console.error('Error loading note for editing:', error);
+            });
     } else {
-        // Otherwise, it's a new note
-        saveNote(noteData);
+        // Set modal title for new note
+        $('#modalTitle').text('Add New Note');
+        
+        // Show modal
+        $('#noteModal').removeClass('hidden').addClass('flex');
+        $('body').addClass('modal-open');
     }
 }
 
 /**
- * Saves a new note via API
- * @param {Object} noteData - Note data object
+ * Show delete confirmation modal
  */
-function saveNote(noteData) {
-    $.ajax({
-        url: `${API_URL}/notes`,
-        method: 'POST',
-        contentType: 'application/json',
-        headers: {
-            'Authorization': `Bearer ${accessToken}`
-        },
-        data: JSON.stringify(noteData),
-        success: function(response) {
-            closeNoteModal();
-            getListNotes();
-            showToast('Note created successfully!', 'success');
-        },
-        error: function(xhr, status, error) {
-            console.error('Error creating note:', xhr.responseText);
-            showToast('Failed to create note. Please try again.', 'error');
-        }
-    });
-}
-
-/**
- * Updates an existing note via API
- * @param {number} id - Note ID
- * @param {Object} noteData - Updated note data
- */
-function editNote(id, noteData) {
-    $.ajax({
-        url: `${API_URL}/notes/${id}`,
-        method: 'PUT',
-        contentType: 'application/json',
-        headers: {
-            'Authorization': `Bearer ${accessToken}`
-        },
-        data: JSON.stringify(noteData),
-        success: function(response) {
-            closeNoteModal();
-            getListNotes();
-            showToast('Note updated successfully!', 'success');
-        },
-        error: function(error) {
-            console.error('Error updating note:', error);
-            showToast('Failed to update note. Please try again.', 'error');
-        }
-    });
-}
-
-/**
- * Shows the delete confirmation modal
- * @param {number} id - Note ID
- */
-function showDeleteModal(id) {
-    $('#deleteNoteId').val(id);
+function showDeleteModal(noteId) {
+    $('#deleteNoteId').val(noteId);
     $('#deleteModal').removeClass('hidden').addClass('flex');
     $('body').addClass('modal-open');
 }
 
 /**
- * Closes the delete confirmation modal
+ * Update the notes UI with current notes
  */
-function closeDeleteModal() {
-    $('#deleteModal').removeClass('flex').addClass('hidden');
-    $('body').removeClass('modal-open');
+function updateNotesUI() {
+    const notesList = $('#notesList');
+    
+    // Clear existing notes
+    notesList.empty();
+    
+    // Update counts
+    $('#totalNotesCount').text(allNotes.length);
+    
+    // Check if we have notes
+    if (allNotes.length > 0) {
+        $('#emptyState').addClass('hidden');
+        
+        // Calculate recent updates (last 24 hours)
+        const oneDayAgo = new Date();
+        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+        const recentUpdates = allNotes.filter(note => new Date(note.updatedAt) > oneDayAgo).length;
+        $('#recentUpdatesCount').text(recentUpdates);
+        
+        // Display notes
+        allNotes.forEach(note => {
+            const cardHtml = generateNoteCard(note);
+            notesList.append(cardHtml);
+        });
+        
+        // Setup event listeners for the new note cards
+        setupNoteCardEvents();
+    } else {
+        // Show empty state
+        $('#emptyState').removeClass('hidden');
+        $('#recentUpdatesCount').text('0');
+    }
 }
 
 /**
- * Confirms and executes note deletion
+ * Generate HTML for a note card
  */
-function confirmDelete() {
-    const noteId = $('#deleteNoteId').val();
+function generateNoteCard(note) {
+    // Format the date
+    const formattedDate = API_CONFIG.formatDate(note.updatedAt);
     
-    $.ajax({
-        url: `${API_URL}/notes/${noteId}`,
-        method: 'DELETE',
-        headers: {
-            'Authorization': `Bearer ${accessToken}`
-        },
-        success: function(response) {
-            closeDeleteModal();
-            getListNotes();
-            showToast('Note deleted successfully!', 'success');
-        },
-        error: function(error) {
-            console.error('Error deleting note:', error);
-            showToast('Failed to delete note. Please try again.', 'error');
-            closeDeleteModal();
-        }
+    // Set category icon
+    let categoryIcon = 'fa-briefcase'; // default for work
+    if (note.category === 'personal') {
+        categoryIcon = 'fa-user';
+    } else if (note.category === 'study') {
+        categoryIcon = 'fa-book';
+    }
+    
+    return `
+        <div class="note-card bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg fade-in" data-id="${note.id}" data-category="${note.category || 'work'}">
+            <div class="p-5">
+                <div class="flex justify-between items-start mb-3">
+                    <h3 class="text-lg font-semibold text-gray-800">${note.title}</h3>
+                    <div class="flex items-center">
+                        <span class="text-xs px-2 py-1 rounded-full ${
+                            note.category === 'work' ? 'bg-blue-100 text-blue-800' : 
+                            note.category === 'personal' ? 'bg-green-100 text-green-800' : 
+                            'bg-purple-100 text-purple-800'
+                        } flex items-center">
+                            <i class="fas ${categoryIcon} mr-1"></i>
+                            ${note.category || 'work'}
+                        </span>
+                    </div>
+                </div>
+                <p class="text-gray-600 text-sm mb-4 note-content">${note.content}</p>
+                <div class="flex justify-between items-center">
+                    <span class="text-xs text-gray-500">${formattedDate}</span>
+                    <div class="flex space-x-2">
+                        <button class="edit-note-btn text-gray-600 hover:text-blue-600" data-id="${note.id}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="delete-note-btn text-gray-600 hover:text-red-600" data-id="${note.id}">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Setup event listeners for note cards
+ */
+function setupNoteCardEvents() {
+    // Edit note
+    $('.edit-note-btn').on('click', function() {
+        const noteId = $(this).data('id');
+        showNoteModal('edit', noteId);
+    });
+    
+    // Delete note
+    $('.delete-note-btn').on('click', function() {
+        const noteId = $(this).data('id');
+        showDeleteModal(noteId);
     });
 }
 
 /**
- * Displays a toast notification
- * @param {string} message - Message to display
- * @param {string} type - Type of toast (success, error)
+ * Filter notes by search query
  */
-function showToast(message, type = 'success') {
-    // Set colors based on type
-    let bgColor = 'bg-green-500';
-    if (type === 'error') {
-        bgColor = 'bg-red-500';
+function filterNotes(query) {
+    if (!query) {
+        // If no query, restore category filter
+        filterByCategory(currentCategory, false);
+        return;
     }
     
-    // Create toast element
-    const toast = $(`
-        <div class="fixed bottom-4 right-4 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-500">
-            ${message}
-        </div>
-    `);
+    // Filter displayed notes based on query
+    $('.note-card').each(function() {
+        const title = $(this).find('h3').text().toLowerCase();
+        const content = $(this).find('.note-content').text().toLowerCase();
+        
+        if (title.includes(query) || content.includes(query)) {
+            $(this).removeClass('hidden');
+        } else {
+            $(this).addClass('hidden');
+        }
+    });
     
-    // Add to body
-    $('body').append(toast);
+    // Check if we have any visible notes
+    const hasVisibleNotes = $('#notesList').children(':not(.hidden)').length > 0;
+    if (!hasVisibleNotes) {
+        // No matching notes found
+        $('#emptyState')
+            .removeClass('hidden')
+            .html(`
+                <div class="flex flex-col items-center justify-center py-12">
+                    <div class="text-gray-400 mb-4">
+                        <i class="fas fa-search text-6xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">No notes found</h3>
+                    <p class="text-gray-500">Try a different search term</p>
+                </div>
+            `);
+    } else {
+        // We have matching notes
+        $('#emptyState').addClass('hidden');
+    }
+}
+
+/**
+ * Filter notes by category
+ */
+function filterByCategory(category, updateUI = true) {
+    currentCategory = category;
     
-    // Remove after 3 seconds
-    setTimeout(() => {
-        toast.addClass('opacity-0');
-        setTimeout(() => {
-            toast.remove();
-        }, 500);
-    }, 3000);
+    // Update UI for selected category
+    $('.category-filter').removeClass('active bg-gray-700').addClass('hover:bg-gray-700');
+    $(`.category-filter[data-category="${category}"]`).addClass('active bg-gray-700').removeClass('hover:bg-gray-700');
+    
+    // Update header
+    if (category === 'all') {
+        $('#currentCategory').text('All Notes');
+    } else {
+        $('#currentCategory').text(`${category.charAt(0).toUpperCase() + category.slice(1)} Notes`);
+    }
+    
+    if (updateUI) {
+        // Either get all notes or fetch by category
+        if (category === 'all') {
+            getListNotes();
+        } else {
+            getNotesByCategory(category);
+        }
+    } else if (category !== 'all') {
+        // Just filter the already loaded notes
+        $('.note-card').each(function() {
+            const noteCategory = $(this).data('category');
+            if (noteCategory === category || category === 'all') {
+                $(this).removeClass('hidden');
+            } else {
+                $(this).addClass('hidden');
+            }
+        });
+        
+        // Check if we have any visible notes
+        const hasVisibleNotes = $('#notesList').children(':not(.hidden)').length > 0;
+        if (!hasVisibleNotes) {
+            // No matching notes
+            $('#emptyState')
+                .removeClass('hidden')
+                .html(`
+                    <div class="flex flex-col items-center justify-center py-12">
+                        <div class="text-gray-400 mb-4">
+                            <i class="fas fa-sticky-note text-6xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-700 mb-2">No ${category} notes found</h3>
+                        <p class="text-gray-500 mb-6">Get started by creating your first ${category} note</p>
+                        <button id="newNoteBtnEmpty" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg flex items-center space-x-2">
+                            <i class="fas fa-plus"></i>
+                            <span>New ${category} Note</span>
+                        </button>
+                    </div>
+                `);
+                
+            // Setup event listener for empty state button
+            $('#newNoteBtnEmpty').on('click', function() {
+                // Pre-select the category
+                $('#category').val(category);
+                showNoteModal('add');
+            });
+        } else {
+            // We have matching notes
+            $('#emptyState').addClass('hidden');
+        }
+    }
+}
+
+/**
+ * Toggle view between grid and list
+ */
+function toggleView() {
+    if (currentView === 'grid') {
+        $('#notesList').addClass('list-view');
+        $('#viewToggleBtn i').removeClass('fa-th-large').addClass('fa-list');
+        currentView = 'list';
+    } else {
+        $('#notesList').removeClass('list-view');
+        $('#viewToggleBtn i').removeClass('fa-list').addClass('fa-th-large');
+        currentView = 'grid';
+    }
+}
+
+/**
+ * Update category counts
+ */
+function updateCategoryCounts() {
+    // Count notes by category
+    const workCount = allNotes.filter(note => note.category === 'work').length;
+    const personalCount = allNotes.filter(note => note.category === 'personal').length;
+    const studyCount = allNotes.filter(note => note.category === 'study').length;
+    
+    // Update the counts
+    $('#all-count').text(allNotes.length);
+    $('#work-count').text(workCount);
+    $('#personal-count').text(personalCount);
+    $('#study-count').text(studyCount);
+    
+    // Update categories count
+    const uniqueCategories = [...new Set(allNotes.map(note => note.category || 'work'))].length;
+    $('#categoriesCount').text(uniqueCategories);
 }
