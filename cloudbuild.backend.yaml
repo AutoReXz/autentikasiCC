@@ -25,9 +25,19 @@ steps:
         "--region",
         "us-central1",
         "--allow-unauthenticated",
+        "--set-env-vars",
+        "ENV_BUCKET_NAME=${_ENV_BUCKET_NAME},ENV_FILE_PATH=${_ENV_FILE_PATH}",
+        "--service-account",
+        "${_SERVICE_ACCOUNT_EMAIL}",
       ]
 
 # Log hanya akan disimpan di Google Cloud Logging
 # Log tidak akan disimpan di Google Cloud Storage (butuh hak akses).
 options:
   logging: CLOUD_LOGGING_ONLY
+  
+# Substitusi untuk variabel konfigurasi
+substitutions:
+  _ENV_BUCKET_NAME: "my-env-bucket"  # Nama bucket default (ganti saat deployment)
+  _ENV_FILE_PATH: "config/.env"      # Path file .env di bucket (ganti saat deployment)
+  _SERVICE_ACCOUNT_EMAIL: "notes-app@${PROJECT_ID}.iam.gserviceaccount.com"  # Service account email
