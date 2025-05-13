@@ -16,7 +16,7 @@ EXPOSE 3000
 # Set environment variables for production
 ENV NODE_ENV=production
 # Setting the fixed backend API URL to the specific Cloud Run service
-ENV API_URL=https://notes-app-263444552508.us-central1.run.app/api
+ENV API_URL=http://localhost:3000
 
 # Start the app
 CMD ["npm", "start"]

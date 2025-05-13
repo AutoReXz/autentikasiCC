@@ -8,19 +8,19 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8080; // Frontend pada port 8080
-const API_PORT = process.env.API_PORT || 3000; // Backend pada port 3000
-const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${API_PORT}`;
+const PORT = process.env.PORT || 8080;
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000';
 
 // Determine if we're in production
 const isProduction = process.env.NODE_ENV === 'production';
 
 // Configure API URL based on environment
 const API_URL = isProduction 
-  ? 'https://notes-app-api.example.com/api' // Gunakan URL produksi jika diperlukan
+  ? process.env.BACKEND_URL || 'https://notes-app-api.example.com/api' // Gunakan URL yang disediakan atau default produksi
   : `${BACKEND_URL}/api`;
 
 console.log(`Environment: ${isProduction ? 'Production' : 'Development'}`);
+console.log(`Backend URL: ${BACKEND_URL}`);
 console.log(`API URL: ${API_URL}`);
 
 // Add CORS headers middleware 
@@ -36,6 +36,36 @@ app.use((req, res, next) => {
   next();
 });
 
+// Expose API configuration to client-side scripts
+app.get('/config.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.send(`window.API_CONFIG = {
+    DEFAULT_URL: '${API_URL}',
+    getApiUrl: function() {
+      console.log('Current API URL:', this.DEFAULT_URL);
+      return this.DEFAULT_URL;
+    },
+    formatDate: function(dateString) {
+      const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+      return new Date(dateString).toLocaleDateString(undefined, options);
+    },
+    showToast: function(message, type = 'info', duration = 3000) {
+      const toast = document.createElement('div');
+      toast.className = \`fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 \${
+        type === 'success' ? 'bg-green-500 text-white' : 
+        type === 'error' ? 'bg-red-500 text-white' : 
+        'bg-blue-500 text-white'
+      }\`;
+      toast.innerHTML = message;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.remove();
+      }, duration);
+    }
+  };`);
+});
+
 // Configure proxy options with cookie handling for authentication
 const proxyOptions = {
   target: BACKEND_URL,
@@ -43,7 +73,8 @@ const proxyOptions = {
   secure: isProduction, // Only enforce HTTPS in production
   ws: true, // Support WebSockets
   pathRewrite: {
-    '^/api': '/api' // Keep /api prefix
+    '^/api': '/api', // Keep /api prefix, making requests go to /api on backend
+    '^/auth': '/auth' // Fix auth routing to point to /auth on backend
   },
   cookieDomainRewrite: {
     '*': '' // Rewrite cookie domain to match frontend
@@ -67,6 +98,9 @@ app.use('/api', (req, res, next) => {
 
 // Proxy API requests to backend
 app.use('/api', createProxyMiddleware(proxyOptions));
+
+// Proxy auth requests to backend
+app.use('/auth', createProxyMiddleware(proxyOptions));
 
 // Serve static files from current directory
 app.use(express.static(__dirname));
@@ -100,5 +134,5 @@ app.get('*', (req, res) => {
 // Start the server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Frontend server running at http://localhost:${PORT}`);
-  console.log(`API proxy configured to: ${API_URL}`);
+  console.log(`Backend proxied at: ${BACKEND_URL}`);
 });

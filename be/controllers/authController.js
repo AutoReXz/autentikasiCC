@@ -91,8 +91,15 @@ const login = async (req, res) => {
     try {
         const { username, password } = req.body;
         
-        // Find user
-        const user = await User.findOne({ where: { username } });
+        // Find user by username or email
+        const user = await User.findOne({ 
+            where: { 
+                [Op.or]: [
+                    { username: username }, 
+                    { email: username }
+                ] 
+            } 
+        });
         
         if (!user) {
             return res.status(401).json({ error: 'Invalid username or password' });
@@ -194,7 +201,8 @@ const refreshToken = async (req, res) => {
 // Logout user
 const logout = async (req, res) => {
     try {
-        const { refreshToken } = req.cookies;
+        // Check if req.cookies exists before attempting to destructure
+        const refreshToken = req.cookies?.refreshToken;
         
         if (refreshToken) {
             // Find user with this refresh token

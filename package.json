@@ -1,0 +1,16 @@
+{
+  "name": "notes-app-full",
+  "version": "1.0.0",
+  "description": "Full Notes application with frontend and backend",
+  "scripts": {
+    "start:be": "cd be && npm start",
+    "start:fe": "cd fe && npm start",
+    "dev:be": "cd be && npm run dev",
+    "dev:fe": "cd fe && npm run dev",
+    "start": "concurrently \"npm run start:be\" \"npm run start:fe\"",
+    "dev": "concurrently \"npm run dev:be\" \"npm run dev:fe\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.1"
+  }
+}

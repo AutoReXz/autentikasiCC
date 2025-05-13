@@ -5,16 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notes App - Frontend</title>
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- jQuery -->
+    <script src="https://cdn.tailwindcss.com"></script>    <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Setup API URL from server -->
-    <script>
-        window.API_URL = '<%= process.env.API_URL || "/api" %>';
-        console.log('API URL set to:', window.API_URL);
-    </script>
+    <!-- Load API configuration from server -->
+    <script src="/config.js"></script>
     <style>
         .fade-in {
             animation: fadeIn 0.5s;
@@ -60,7 +56,7 @@
             <div class="flex items-center justify-center h-16 border-b border-gray-700">
                 <div class="flex items-center space-x-2">
                     <i class="fas fa-sticky-note text-yellow-400 text-xl"></i>
-                    <span class="text-xl font-semibold">Notes App (VM)</span>
+                    <span class="text-xl font-semibold">Notes App</span>
                 </div>
             </div>
             
@@ -111,18 +107,23 @@
                     </ul>
                 </div>
             </div>
-            
-            <div class="absolute bottom-0 w-full p-4 border-t border-gray-700">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-3">
+              <div class="absolute bottom-0 w-full p-4 border-t border-gray-700">
+                <div id="sidebarUserProfile" class="flex items-center justify-between">
+                    <!-- User info when logged in -->
+                    <div id="sidebarAuthInfo" class="flex items-center space-x-3">
                         <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                            <span class="font-semibold text-sm">VM</span>
+                            <span id="userInitial" class="font-semibold text-sm">U</span>
                         </div>
                         <div>
-                            <p class="text-sm font-medium">VM Frontend</p>
+                            <p id="sidebarUsername" class="text-sm font-medium">Guest</p>
                             <p id="connectionStatus" class="text-xs text-green-400">Connected</p>
                         </div>
                     </div>
+                    
+                    <!-- Logout button when logged in -->
+                    <button id="sidebarLogoutBtn" class="hidden text-gray-300 hover:text-red-400">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -332,6 +333,6 @@
     </div>    <script src="utils.js"></script>
     <script src="auth.js"></script>
     <script src="auth-script.js"></script>
-    <script src="vm-script.js"></script>
+    <script src="notes-app.js"></script>
 </body>
 </html>

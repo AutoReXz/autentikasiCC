@@ -3,6 +3,11 @@
 let currentUser = null;
 let accessToken = null;
 
+// Use API_URL consistently from API_CONFIG
+function getApiUrl() {
+    return API_CONFIG.getApiUrl();
+}
+
 // Check if user is already logged in (from localStorage)
 function checkAuthState() {
     // Try to get saved auth data
@@ -21,7 +26,7 @@ function checkAuthState() {
 async function register(username, email, password) {
     try {
         const response = await $.ajax({
-            url: `${API_URL}/auth/register`,
+            url: `/auth/register`, // Changed to direct endpoint without API_URL
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ username, email, password })
@@ -45,7 +50,7 @@ async function register(username, email, password) {
 async function login(username, password) {
     try {
         const response = await $.ajax({
-            url: `${API_URL}/auth/login`,
+            url: `/auth/login`, // Changed to direct endpoint without API_URL
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ username, password })
@@ -69,7 +74,7 @@ async function login(username, password) {
 async function refreshToken() {
     try {
         const response = await $.ajax({
-            url: `${API_URL}/auth/refresh-token`,
+            url: `/auth/refresh-token`, // Changed to direct endpoint without API_URL
             method: 'POST',
             xhrFields: {
                 withCredentials: true // Send cookies with request
@@ -94,14 +99,15 @@ async function logout() {
     try {
         // Call logout endpoint to invalidate refresh token
         await $.ajax({
-            url: `${API_URL}/auth/logout`,
+            url: `/auth/logout`, // Changed to direct endpoint without API_URL
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${accessToken}`
             },
             xhrFields: {
                 withCredentials: true // Send cookies with request
-            }
+            },
+            crossDomain: true // Enable cross-domain requests
         });
     } catch (error) {
         console.error('Logout error:', error);
@@ -118,7 +124,7 @@ async function logout() {
 async function getCurrentUser() {
     try {
         const response = await $.ajax({
-            url: `${API_URL}/auth/me`,
+            url: `/auth/me`, // Changed to direct endpoint without API_URL
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${accessToken}`

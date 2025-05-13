@@ -143,9 +143,8 @@ function setupAuthListeners() {
             $('#registerForm button[type="submit"]').prop('disabled', false);
         }
     });
-    
-    // Handle logout
-    $('#logoutBtn').on('click', async function() {
+      // Handle logout (both top navbar and sidebar buttons)
+    $('#logoutBtn, #sidebarLogoutBtn').on('click', async function() {
         try {
             await logout();
             showUnauthenticatedUI();
@@ -154,21 +153,54 @@ function setupAuthListeners() {
             showToast('Logout failed', 'error');
         }
     });
-}
-
-// Update UI for authenticated user
-function showAuthenticatedUI() {
-    $('#authButtons').addClass('hidden');
-    $('#userProfile').removeClass('hidden').addClass('flex');
-    $('#usernameDisplay').text(currentUser.username);
-    $('#newNoteBtnTop, #newNoteBtnSidebar, #newNoteBtnEmpty').removeClass('hidden');
-}
+}    // Update UI for authenticated user
+    function showAuthenticatedUI() {
+        $('#authButtons').addClass('hidden');
+        $('#userProfile').removeClass('hidden').addClass('flex');
+        $('#usernameDisplay').text(currentUser.username);
+        $('#newNoteBtnTop, #newNoteBtnSidebar, #newNoteBtnEmpty').removeClass('hidden');
+        
+        // Update sidebar user info
+        $('#sidebarUsername').text(currentUser.username);
+        $('#userInitial').text(currentUser.username.charAt(0).toUpperCase());
+        $('#sidebarLogoutBtn').removeClass('hidden');
+        
+        // Hide the "Authentication Required" message if it's showing
+        $('#emptyState').addClass('hidden');
+        
+        // If the empty state shows authentication required, replace it
+        if ($('#emptyState').html().includes('Authentication Required')) {
+            $('#emptyState').html(`
+                <div class="flex flex-col items-center justify-center py-12">
+                    <div class="text-gray-400 mb-4">
+                        <i class="fas fa-sticky-note text-6xl"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">No notes found</h3>
+                    <p class="text-gray-500 mb-6">Get started by creating your first note</p>
+                    <button id="newNoteBtnEmpty" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg flex items-center space-x-2">
+                        <i class="fas fa-plus"></i>
+                        <span>New Note</span>
+                    </button>
+                </div>
+            `);
+            // Re-attach event listener to the new button
+            $('#newNoteBtnEmpty').on('click', function() {
+                showNoteModal();
+            });
+        }
+    }
 
 // Update UI for unauthenticated user
 function showUnauthenticatedUI() {
     $('#authButtons').removeClass('hidden');
     $('#userProfile').removeClass('flex').addClass('hidden');
     $('#newNoteBtnTop, #newNoteBtnSidebar, #newNoteBtnEmpty').addClass('hidden');
+    
+    // Update sidebar user info
+    $('#sidebarUsername').text('Guest');
+    $('#userInitial').text('G');
+    $('#sidebarLogoutBtn').addClass('hidden');
+    
     // Clear notes list
     $('#notesList').html('');
     $('#emptyState').removeClass('hidden').html(`

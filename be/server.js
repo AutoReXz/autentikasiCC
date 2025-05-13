@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { initModels } from './models/index.js';
 import noteRoutes from './routes/noteRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 import migrateCategories from './utils/migrate-categories.js';
 import { mysqlErrorMiddleware } from './utils/mysql-error-handler.js';
 import os from 'os';
@@ -50,10 +51,25 @@ app.use(express.json({
 
 // API routes
 app.use('/api', noteRoutes);
+app.use('/auth', authRoutes); // Add auth routes with /auth prefix
 
-// Health check endpoint
+// Health check endpoints
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        service: 'notes-backend',
+        version: '1.0.0'
+    });
+});
+
+app.get('/api/health', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        service: 'notes-backend',
+        version: '1.0.0'
+    });
 });
 
 // Root route to indicate this is an API server only

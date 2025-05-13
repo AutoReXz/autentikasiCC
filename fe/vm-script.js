@@ -1,5 +1,6 @@
 // Global variables for state management
-let API_URL = ''; // Will be set from utils.js
+let API_URL = '/api'; // Default value
+let BACKEND_URL = ''; // Will be extracted from API_URL
 let allNotes = [];
 let currentCategory = 'all';
 let currentView = 'grid'; // grid or list
@@ -16,6 +17,10 @@ function showToast(message, type = 'info') {
 $(document).ready(function() {
     // Initialize API_URL from utils
     API_URL = API_CONFIG.getApiUrl();
+    // Extract BACKEND_URL from API_URL by removing '/api' suffix if present
+    BACKEND_URL = API_URL.endsWith('/api') ? API_URL.substring(0, API_URL.length - 4) : API_URL;
+    console.log('VM-script initialized with API_URL:', API_URL);
+    console.log('Backend URL extracted as:', BACKEND_URL);
     
     // Auto connect with a slight delay
     setTimeout(() => {
@@ -38,15 +43,18 @@ function connectToBackend() {
         </div>
     `);
     
+    // Get API URL using the consistent method
+    const apiUrl = API_CONFIG.getApiUrl();
+    
     // Debug message
-    console.log('Attempting to connect to API at:', API_URL);
+    console.log('Attempting to connect to API at:', apiUrl);
     
     // Test connection and load notes if authenticated
-    testConnection()
-        .then((response) => {
+    testConnection()        .then((response) => {
             console.log('Connection successful, response:', response);
             // Update status
             $('#connectionStatus').text('Connected').removeClass('text-red-400').addClass('text-green-400');
+            showToast('Connected to backend successfully', 'success');
             
             // Check if user is authenticated
             if (checkAuthState()) {
@@ -69,15 +77,20 @@ function connectToBackend() {
             if (connectionAttempts < 3) {
                 showToast(`Connection failed. Retrying (${connectionAttempts}/3)...`, 'error');
                 setTimeout(connectToBackend, 1000);
-            } else {
-                showToast('Could not connect to backend. Please check the backend server.', 'error');
-                $('#connectionStatus').text('Disconnected').removeClass('text-green-400').addClass('text-red-400');
-                $('#notesList').html(`
+            } else {                showToast('Could not connect to backend. Please check the backend server.', 'error');
+                $('#connectionStatus').text('Disconnected').removeClass('text-green-400').addClass('text-red-400');                $('#notesList').html(`
                     <div class="col-span-full p-8 bg-red-50 rounded-lg border border-red-200 text-center">
                         <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4"></i>
                         <h3 class="text-xl font-bold text-red-700 mb-2">Connection Failed</h3>
-                        <p class="text-red-600 mb-4">Could not connect to backend server at ${API_URL}.</p>
-                        <p class="text-red-600 mb-4">Make sure your backend server is running and accessible.</p>
+                        <p class="text-red-600 mb-4">Could not connect to backend server at ${BACKEND_URL}</p>
+                        <p class="text-red-600 mb-4">Make sure your backend server is running and accessible.</p>                        <div class="text-left bg-gray-100 p-3 rounded mb-4 overflow-auto max-h-32 text-sm font-mono">
+                            <p>Troubleshooting steps:</p>
+                            <ol class="list-decimal list-inside">
+                                <li>Verify that the backend server is running and accessible</li>
+                                <li>Check that the health endpoint is accessible</li>
+                                <li>Ensure there are no CORS issues blocking the request</li>
+                            </ol>
+                        </div>
                         <button id="retryConnection" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
                             Retry Connection
                         </button>
@@ -95,8 +108,13 @@ function connectToBackend() {
  * Test connection to the backend
  */
 function testConnection() {
-    // Testing health endpoint through our proxy
-    const healthEndpoint = `${API_URL}/health`;
+    // Parse API_URL to handle endpoints correctly
+    const baseUrl = API_CONFIG.getApiUrl();
+    // Avoid double /api in the URL
+    const healthEndpoint = baseUrl.endsWith('/api') 
+        ? `${baseUrl}/health`  // If already ends with /api, just add /health
+        : `${baseUrl}/api/health`; // Otherwise add /api/health
+    
     console.log('Testing connection to:', healthEndpoint);
     return $.ajax({
         url: healthEndpoint,
@@ -105,7 +123,6 @@ function testConnection() {
         beforeSend: function() {
             console.log('Sending health check request...');
         },
-        timeout: 5000,
         headers: {
             'Accept': 'application/json',
         }
@@ -199,7 +216,7 @@ function setupSidebar() {
 async function getListNotes() {
     try {
         const response = await $.ajax({
-            url: `${API_URL}/notes`,
+            url: `${API_CONFIG.getApiUrl()}/notes`,
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${accessToken}`
@@ -231,10 +248,9 @@ async function getNotesByCategory(category) {
     if (category === 'all') {
         return getListNotes();
     }
-    
-    try {
+      try {
         const response = await $.ajax({
-            url: `${API_URL}/notes/category/${category}`,
+            url: `${API_CONFIG.getApiUrl()}/notes/category/${category}`,
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${accessToken}`
@@ -259,7 +275,7 @@ async function getNotesByCategory(category) {
 async function getNoteById(id) {
     try {
         return await $.ajax({
-            url: `${API_URL}/notes/${id}`,
+            url: `${API_CONFIG.getApiUrl()}/notes/${id}`,
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${accessToken}`
@@ -283,9 +299,8 @@ async function createNote() {
     try {
         // Show loading
         $('#saveBtn').html('<i class="fas fa-spinner fa-spin"></i> Saving...').prop('disabled', true);
-        
-        const response = await $.ajax({
-            url: `${API_URL}/notes`,
+          const response = await $.ajax({
+            url: `${API_CONFIG.getApiUrl()}/notes`,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -329,7 +344,7 @@ async function updateNote(id) {
         $('#saveBtn').html('<i class="fas fa-spinner fa-spin"></i> Saving...').prop('disabled', true);
         
         const response = await $.ajax({
-            url: `${API_URL}/notes/${id}`,
+            url: `${API_CONFIG.getApiUrl()}/notes/${id}`,
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -369,7 +384,7 @@ async function deleteNote(id) {
         $('#confirmDeleteBtn').html('<i class="fas fa-spinner fa-spin"></i> Deleting...').prop('disabled', true);
         
         await $.ajax({
-            url: `${API_URL}/notes/${id}`,
+            url: `${API_CONFIG.getApiUrl()}/notes/${id}`,
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${accessToken}`
