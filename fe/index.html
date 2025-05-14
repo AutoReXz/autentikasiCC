@@ -8,27 +8,9 @@
     <script src="https://cdn.tailwindcss.com"></script>    <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">    <!-- Load API configuration from server -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Load API configuration from server -->
     <script src="/config.js"></script>
-    <!-- Fallback if config.js fails to load -->
-    <script>
-        if (!window.API_CONFIG) {
-            console.error('Failed to load config.js, using fallback configuration');
-            window.API_CONFIG = {
-                DEFAULT_URL: 'https://notes-app-263444552508.us-central1.run.app',
-                getApiUrl: function() {
-                    console.warn('Using fallback API URL:', this.DEFAULT_URL);
-                    return this.DEFAULT_URL;
-                },
-                formatDate: function(dateString) {
-                    return new Date(dateString).toLocaleString();
-                },
-                showToast: function(message, type = 'info', duration = 3000) {
-                    alert(message); // Fallback to alert if toast mechanism fails
-                }
-            };
-        }
-    </script>
     <style>
         .fade-in {
             animation: fadeIn 0.5s;

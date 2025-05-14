@@ -2,32 +2,13 @@ runtime: python39  # Menggunakan runtime standar untuk hosting HTML statis
 service: fe-galang  # Nama layanan App Engine, bisa diubah sesuai kebutuhan
 instance_class: F1  # Kelas instance untuk App Engine (F1 adalah kelas standar yang ringan)
 
-env_variables:
-  BACKEND_URL: "https://notes-app-263444552508.us-central1.run.app"
-
 handlers:
-  # Serve configuration script first
-  - url: /config\.js
-    static_files: config.js
-    upload: config\.js
-    http_headers:
-      Cache-Control: "no-cache, must-revalidate"
-      Content-Type: "application/javascript"
-
-  # Root URL
   - url: /
     static_files: index.html
     upload: index.html
-    http_headers:
-      Cache-Control: "no-cache"
 
-  # All other files
   - url: /(.*)
     static_files: \1
     upload: (.*)
-    http_headers:
-      X-Frame-Options: DENY
-      X-XSS-Protection: "1; mode=block"
-      X-Content-Type-Options: nosniff
 
 default_expiration: "1h"  # Waktu cache default
