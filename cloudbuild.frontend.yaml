@@ -1,5 +1,40 @@
 steps:
-  # Step 1: Deploy langsung ke App Engine tanpa membangun Docker image
+  # Step 1: Install dependencies and update config.js with environment variables
+  - name: 'node:18'
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        cd fe
+        echo "// Static API configuration for cloud deployment" > config.js
+        echo "window.API_CONFIG = {" >> config.js
+        echo "  DEFAULT_URL: '$$BACKEND_URL'," >> config.js
+        echo "  getApiUrl: function() {" >> config.js
+        echo "    console.log('Current API URL:', this.DEFAULT_URL);" >> config.js
+        echo "    return this.DEFAULT_URL;" >> config.js
+        echo "  }," >> config.js
+        echo "  formatDate: function(dateString) {" >> config.js
+        echo "    const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };" >> config.js
+        echo "    return new Date(dateString).toLocaleDateString(undefined, options);" >> config.js
+        echo "  }," >> config.js
+        echo "  showToast: function(message, type = 'info', duration = 3000) {" >> config.js
+        echo "    const toast = document.createElement('div');" >> config.js
+        echo "    toast.className = \`fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 \${" >> config.js
+        echo "      type === 'success' ? 'bg-green-500 text-white' : " >> config.js
+        echo "      type === 'error' ? 'bg-red-500 text-white' : " >> config.js
+        echo "      'bg-blue-500 text-white'" >> config.js
+        echo "    }\`;" >> config.js
+        echo "    toast.innerHTML = message;" >> config.js
+        echo "    document.body.appendChild(toast);" >> config.js
+        echo "    " >> config.js
+        echo "    setTimeout(() => {" >> config.js
+        echo "      toast.remove();" >> config.js
+        echo "    }, duration);" >> config.js
+        echo "  }" >> config.js
+        echo "};" >> config.js
+        cat config.js
+        
+  # Step 2: Deploy to App Engine
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
@@ -7,7 +42,14 @@ steps:
       - deploy
       - app.yaml
       - '--quiet'
-    dir: 'fe'  # Ganti dengan direktori frontend yang berisi app.yaml dan file HTML kamu
+    dir: 'fe'
 
 options:
   logging: CLOUD_LOGGING_ONLY  # Opsional: hanya mencatat log ke Google Cloud Logging
+
+# Define environment variables to be used during build
+substitutions:
+  _BACKEND_URL: 'https://notes-app-263444552508.us-central1.run.app'  # Default backend URL
+
+# You can override this when triggering the build:
+# gcloud builds submit --config=cloudbuild.frontend.yaml --substitutions=_BACKEND_URL="https://your-custom-backend.run.app"

@@ -46,11 +46,19 @@ function connectToBackend() {
     // Get API URL using the consistent method
     const apiUrl = API_CONFIG.getApiUrl();
     
-    // Debug message
+    // Extract BACKEND_URL from API_URL
+    BACKEND_URL = apiUrl.endsWith('/api') ? apiUrl.substring(0, apiUrl.length - 4) : apiUrl;
+    
+    // Debug message (added more detailed logging)
+    console.log('------ CONNECTION ATTEMPT LOG ------');
     console.log('Attempting to connect to API at:', apiUrl);
+    console.log('Backend URL extracted as:', BACKEND_URL);
+    console.log('API_CONFIG:', JSON.stringify(API_CONFIG));
+    console.log('Using browser:', navigator.userAgent);
+    console.log('----------------------------------');
     
     // Test connection and load notes if authenticated
-    testConnection()        .then((response) => {
+    testConnection().then((response) => {
             console.log('Connection successful, response:', response);
             // Update status
             $('#connectionStatus').text('Connected').removeClass('text-red-400').addClass('text-green-400');
@@ -112,22 +120,48 @@ function connectToBackend() {
 function testConnection() {
     // Parse API_URL to handle endpoints correctly
     const baseUrl = API_CONFIG.getApiUrl();
-    // Avoid double /api in the URL
-    const healthEndpoint = baseUrl.endsWith('/api') 
-        ? `${baseUrl}/health`  // If already ends with /api, just add /health
-        : `${baseUrl}/api/health`; // Otherwise add /api/health
+    // Try multiple health endpoints to increase chance of success
+    // For Cloud Run, the health endpoint might be at root, /health, or /api/health
+    const healthEndpoints = [
+        baseUrl,
+        `${baseUrl}/health`,
+        baseUrl.endsWith('/api') ? `${baseUrl}/health` : `${baseUrl}/api/health`
+    ];
     
-    console.log('Testing connection to:', healthEndpoint);
+    console.log('Will try these health endpoints in sequence:', healthEndpoints);
+    
+    // Try endpoints in sequence
+    return tryEndpoints(healthEndpoints, 0);
+}
+
+// Helper function to try health endpoints in sequence
+function tryEndpoints(endpoints, index) {
+    if (index >= endpoints.length) {
+        return Promise.reject({ message: 'All endpoints failed' });
+    }
+    
+    const endpoint = endpoints[index];
+    console.log(`Testing connection attempt ${index + 1}/${endpoints.length} to: ${endpoint}`);
+    
     return $.ajax({
-        url: healthEndpoint,
+        url: endpoint,
         method: 'GET',
         timeout: 10000, // Increase timeout to 10 seconds
         beforeSend: function() {
-            console.log('Sending health check request...');
+            console.log(`Sending health check request to ${endpoint}...`);
         },
         headers: {
             'Accept': 'application/json',
         }
+    })
+    .then(response => {
+        console.log(`Connection successful to ${endpoint}:`, response);
+        return response;
+    })
+    .catch(error => {
+        console.error(`Endpoint ${endpoint} failed:`, error);
+        // Try next endpoint
+        return tryEndpoints(endpoints, index + 1);
     });
 }
 

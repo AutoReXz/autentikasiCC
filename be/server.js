@@ -18,9 +18,27 @@ const HOST = process.env.HOST || '0.0.0.0'; // Listen on all interfaces by defau
 
 // Enhanced CORS configuration to allow requests from any origin
 app.use(cors({
-  origin: '*', // Allow all origins
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, etc.)
+    if(!origin) return callback(null, true);
+    
+    // Log the origin for debugging
+    console.log('Request from origin:', origin);
+    
+    // Allow all origins for now for troubleshooting
+    return callback(null, true);
+    
+    /* Uncomment this later when everything is working to restrict origins
+    const allowedOrigins = [process.env.FRONTEND_URL || 'http://localhost:8080'];
+    if (allowedOrigins.indexOf(origin) === -1) {
+      var msg = `CORS policy: ${origin} is not allowed`;
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+    */
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   credentials: true
 }));
 
@@ -53,22 +71,24 @@ app.use(express.json({
 app.use('/api', noteRoutes);
 app.use('/auth', authRoutes); // Add auth routes with /auth prefix
 
-// Health check endpoints
-app.get('/health', (req, res) => {
+// Health check endpoints - add more for better cloud compatibility
+app.get(['/', '/health', '/api/health', '/status'], (req, res) => {
+    // Add CORS headers explicitly for health endpoints
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    
+    // Return health status with additional debug information
     res.json({ 
         status: 'ok', 
         timestamp: new Date().toISOString(),
         service: 'notes-backend',
-        version: '1.0.0'
-    });
-});
-
-app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: 'ok', 
-        timestamp: new Date().toISOString(),
-        service: 'notes-backend',
-        version: '1.0.0'
+        version: '1.0.0',
+        environment: process.env.NODE_ENV || 'development',
+        frontend_url: process.env.FRONTEND_URL || 'not set',
+        host: req.headers.host,
+        origin: req.headers.origin || 'none',
+        path: req.path
     });
 });
 

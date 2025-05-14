@@ -25,9 +25,14 @@ steps:
         "--region",
         "us-central1",
         "--allow-unauthenticated",
+        "--set-env-vars=FRONTEND_URL=${_FRONTEND_URL}",
       ]
 
 # Log hanya akan disimpan di Google Cloud Logging
 # Log tidak akan disimpan di Google Cloud Storage (butuh hak akses).
 options:
   logging: CLOUD_LOGGING_ONLY
+
+# Define environment variables to be used during build
+substitutions:
+  _FRONTEND_URL: "https://fe-galang-dot-f-13-450706.uc.r.appspot.com"  # Default frontend URL
