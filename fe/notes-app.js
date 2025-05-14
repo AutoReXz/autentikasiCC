@@ -80,17 +80,17 @@ function connectToBackend() {
             } else {
                 showToast('Could not connect to backend. Please check the backend server.', 'error');
                 $('#connectionStatus').text('Disconnected').removeClass('text-green-400').addClass('text-red-400');                $('#notesList').html(`
-                    <div class="col-span-full p-8 bg-red-50 rounded-lg border border-red-200 text-center">
-                        <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4"></i>
+                    <div class="col-span-full p-8 bg-red-50 rounded-lg border border-red-200 text-center">                        <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4"></i>
                         <h3 class="text-xl font-bold text-red-700 mb-2">Connection Failed</h3>
-                        <p class="text-red-600 mb-4">Could not connect to backend server at ${BACKEND_URL}</p>
-                        <p class="text-red-600 mb-4">Make sure your backend server is running and accessible.</p>
-                        <div class="text-left bg-gray-100 p-3 rounded mb-4 overflow-auto max-h-32 text-sm font-mono">
-                            <p>Troubleshooting steps:</p>
+                        <p class="text-red-600 mb-4">Could not connect to backend server at: <span class="font-mono font-bold">${BACKEND_URL || 'Unknown'}</span></p>
+                        <p class="text-red-600 mb-4">API endpoint attempted: <span class="font-mono font-bold">${API_CONFIG.getApiUrl()}/health</span></p>
+                        <div class="text-left bg-gray-100 p-3 rounded mb-4 overflow-auto max-h-48 text-sm font-mono">
+                            <p class="font-bold">Praktis Troubleshooting:</p>
                             <ol class="list-decimal list-inside">
-                                <li>Verify that the backend server is running and accessible</li>
-                                <li>Check that the health endpoint is accessible</li>
-                                <li>Ensure there are no CORS issues blocking the request</li>
+                                <li>Pastikan server backend aktif dan berjalan di <span class="font-bold">${BACKEND_URL || 'localhost:3000'}</span></li>
+                                <li>Cek apakah endpoint health dapat diakses di browser: <a href="${BACKEND_URL}/health" target="_blank" class="text-blue-600 hover:underline">${BACKEND_URL}/health</a></li>
+                                <li>Buka Developer Console (F12) dan lihat bagian Network untuk detail error</li>
+                                <li>Periksa apakah ada masalah CORS yang memblokir request (lihat Console)</li>
                             </ol>
                         </div>
                         <button id="retryConnection" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
