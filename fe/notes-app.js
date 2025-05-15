@@ -85,7 +85,7 @@ function connectToBackend() {
                         <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4"></i>
                         <h3 class="text-xl font-bold text-red-700 mb-2">Connection Failed</h3>
                         <p class="text-red-600 mb-4">Could not connect to backend server at: <span class="font-mono font-bold">${BACKEND_URL || 'Unknown'}</span></p>
-                        <p class="text-red-600 mb-4">API endpoint attempted: <span class="font-mono font-bold">${API_CONFIG.getApiUrl()}/health</span></p>
+                        <p class="text-red-600 mb-4">API endpoint attempted: <span class="font-mono font-bold">${API_CONFIG.getApiUrl()}/api/health</span></p>
                         <div class="text-left bg-gray-100 p-3 rounded mb-4 overflow-auto max-h-48 text-sm font-mono">
                             <p class="font-bold">Praktis Troubleshooting:</p>
                             <ol class="list-decimal list-inside">
@@ -113,7 +113,7 @@ function connectToBackend() {
  */
 function testConnection() {
     // Use API_URL directly for health endpoint
-    const healthEndpoint = `${API_CONFIG.getApiUrl()}/health`;
+    const healthEndpoint = `${API_CONFIG.getApiUrl()}/api/health`;
     console.log('Testing connection to:', healthEndpoint);
     return $.ajax({
         url: healthEndpoint,
@@ -232,7 +232,7 @@ function setupSidebar() {
 async function getListNotes() {
     try {
         const response = await $.ajax({
-            url: `${API_CONFIG.getApiUrl()}/notes`,
+            url: `${API_CONFIG.getApiUrl()}/api/notes`,
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${accessToken}`
@@ -268,7 +268,7 @@ async function getNotesByCategory(category) {
     }
       try {
         const response = await $.ajax({
-            url: `${API_CONFIG.getApiUrl()}/notes/category/${category}`,
+            url: `${API_CONFIG.getApiUrl()}/api/notes/category/${category}`,
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${accessToken}`
@@ -293,7 +293,7 @@ async function getNotesByCategory(category) {
 async function getNoteById(id) {
     try {
         return await $.ajax({
-            url: `${API_CONFIG.getApiUrl()}/notes/${id}`,
+            url: `${API_CONFIG.getApiUrl()}/api/notes/${id}`,
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${accessToken}`
@@ -318,7 +318,7 @@ async function createNote() {
         // Show loading
         $('#saveBtn').html('<i class="fas fa-spinner fa-spin"></i> Saving...').prop('disabled', true);
           const response = await $.ajax({
-            url: `${API_CONFIG.getApiUrl()}/notes`,
+            url: `${API_CONFIG.getApiUrl()}/api/notes`,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -362,7 +362,7 @@ async function updateNote(id) {
         $('#saveBtn').html('<i class="fas fa-spinner fa-spin"></i> Saving...').prop('disabled', true);
         
         const response = await $.ajax({
-            url: `${API_CONFIG.getApiUrl()}/notes/${id}`,
+            url: `${API_CONFIG.getApiUrl()}/api/notes/${id}`,
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -402,7 +402,7 @@ async function deleteNote(id) {
         $('#confirmDeleteBtn').html('<i class="fas fa-spinner fa-spin"></i> Deleting...').prop('disabled', true);
         
         await $.ajax({
-            url: `${API_CONFIG.getApiUrl()}/notes/${id}`,
+            url: `${API_CONFIG.getApiUrl()}/api/notes/${id}`,
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${accessToken}`

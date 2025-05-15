@@ -1,6 +1,9 @@
 window.API_CONFIG = {
   DEFAULT_URL: 'https://notes-app-263444552508.us-central1.run.app',
-  getApiUrl: function() { return this.DEFAULT_URL; },
+  getApiUrl: function() { 
+    // Remove trailing slash if exists to ensure consistent URL format
+    return this.DEFAULT_URL.replace(/\/$/, '');
+  },
   formatDate: function(dateString) {
     const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
     return new Date(dateString).toLocaleDateString(undefined, options);

@@ -26,7 +26,7 @@ function checkAuthState() {
 async function register(username, email, password) {
     try {
         const response = await $.ajax({
-            url: `/auth/register`, // Changed to direct endpoint without API_URL
+            url: `${API_CONFIG.getApiUrl()}/api/auth/register`, // Fixed to match API documentation
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ username, email, password })
@@ -50,7 +50,7 @@ async function register(username, email, password) {
 async function login(username, password) {
     try {
         const response = await $.ajax({
-            url: `/auth/login`, // Changed to direct endpoint without API_URL
+            url: `${API_CONFIG.getApiUrl()}/api/auth/login`, // Fixed to match API documentation
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ username, password })
@@ -74,7 +74,7 @@ async function login(username, password) {
 async function refreshToken() {
     try {
         const response = await $.ajax({
-            url: `/auth/refresh-token`, // Changed to direct endpoint without API_URL
+            url: `${API_CONFIG.getApiUrl()}/api/auth/refresh-token`, // Fixed to match API documentation
             method: 'POST',
             xhrFields: {
                 withCredentials: true // Send cookies with request
@@ -99,7 +99,7 @@ async function logout() {
     try {
         // Call logout endpoint to invalidate refresh token
         await $.ajax({
-            url: `/auth/logout`, // Changed to direct endpoint without API_URL
+            url: `${API_CONFIG.getApiUrl()}/api/auth/logout`, // Fixed to match API documentation
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${accessToken}`
@@ -124,7 +124,7 @@ async function logout() {
 async function getCurrentUser() {
     try {
         const response = await $.ajax({
-            url: `/auth/me`, // Changed to direct endpoint without API_URL
+            url: `${API_CONFIG.getApiUrl()}/api/auth/me`, // Fixed to match API documentation
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${accessToken}`
@@ -167,7 +167,7 @@ function setupAjaxAuth() {
 // Handle authentication errors in AJAX requests
 $(document).ajaxError(function(event, jqXHR, ajaxSettings) {
     // Skip auth-related URLs to prevent infinite loops
-    if (ajaxSettings.url.includes('/auth/')) {
+    if (ajaxSettings.url.includes('/api/auth/')) {
         return;
     }
     
@@ -181,6 +181,8 @@ $(document).ajaxError(function(event, jqXHR, ajaxSettings) {
                     type: ajaxSettings.type,
                     data: ajaxSettings.data,
                     contentType: ajaxSettings.contentType,
+                    headers: { 'Authorization': `Bearer ${accessToken}` },
+                    xhrFields: { withCredentials: true },
                     success: ajaxSettings.success
                 });
             })

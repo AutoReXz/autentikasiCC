@@ -8,10 +8,10 @@ async function checkUsers() {
   try {
     // Connect to database
     const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || '35.224.142.229',
-      user: process.env.DB_USER || 'root',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'notes_app'
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME
     });
 
     console.log('Connected to database');

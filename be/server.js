@@ -13,8 +13,8 @@ import os from 'os';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '0.0.0.0'; // Listen on all interfaces by default
+const PORT = process.env.PORT;
+const HOST = process.env.HOST;
 
 // Enhanced CORS configuration to allow requests from any origin
 app.use(cors({

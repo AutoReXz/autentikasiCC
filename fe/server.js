@@ -21,7 +21,10 @@ if (!BACKEND_URL && fs.existsSync(envPath)) {
 // Generate static config.js file for frontend
 const configJsContent = `window.API_CONFIG = {
   DEFAULT_URL: '${BACKEND_URL}',
-  getApiUrl: function() { return this.DEFAULT_URL; },
+  getApiUrl: function() { 
+    // Remove trailing slash if exists to ensure consistent URL format
+    return this.DEFAULT_URL.replace(/\\/$/, '');
+  },
   formatDate: function(dateString) {
     const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
     return new Date(dateString).toLocaleDateString(undefined, options);
@@ -69,7 +72,8 @@ app.get('/config.js', (req, res) => {
     DEFAULT_URL: '${BACKEND_URL}',
     getApiUrl: function() {
       console.log('Current API URL:', this.DEFAULT_URL);
-      return this.DEFAULT_URL;
+      // Remove trailing slash if exists to ensure consistent URL format
+      return this.DEFAULT_URL.replace(/\\/$/, '');
     },
     formatDate: function(dateString) {
       const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
@@ -100,7 +104,7 @@ const proxyOptions = {
   ws: true, // Support WebSockets
   pathRewrite: {
     '^/api': '/api', // Keep /api prefix, making requests go to /api on backend
-    '^/auth': '/auth' // Fix auth routing to point to /auth on backend
+    '^/auth': '/api/auth' // Fix auth routing to point to /api/auth on backend
   },
   cookieDomainRewrite: {
     '*': '' // Rewrite cookie domain to match frontend
