@@ -74,7 +74,7 @@ async function login(username, password) {
 async function refreshToken() {
     try {
         const response = await $.ajax({
-            url: `${API_CONFIG.getApiUrl()}/auth/refresh-token`,
+            url: `${API_CONFIG.getApiUrl()}/api/auth/refresh-token`, // Fixed to match API documentation
             method: 'POST',
             xhrFields: {
                 withCredentials: true // Send cookies with request
@@ -99,7 +99,7 @@ async function logout() {
     try {
         // Call logout endpoint to invalidate refresh token
         await $.ajax({
-            url: `${API_CONFIG.getApiUrl()}/auth/logout`,
+            url: `${API_CONFIG.getApiUrl()}/api/auth/logout`, // Fixed to match API documentation
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${accessToken}`
