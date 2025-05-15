@@ -52,6 +52,24 @@ const isProduction = process.env.NODE_ENV === 'production';
 console.log(`Environment: ${isProduction ? 'Production' : 'Development'}`);
 console.log(`Backend URL: ${BACKEND_URL}`);
 
+// Force HTTPS redirection in production
+app.use((req, res, next) => {
+  if (!req.secure && process.env.NODE_ENV === 'production') {
+    return res.redirect(`https://${req.headers.host}${req.url}`);
+  }
+  next();
+});
+
+// Add security headers
+app.use((req, res, next) => {
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://code.jquery.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https:; img-src 'self' data:");
+  next();
+});
+
 // Add CORS headers middleware 
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
@@ -97,10 +115,9 @@ app.get('/config.js', (req, res) => {
 });
 
 // Configure proxy options with cookie handling for authentication
-const proxyOptions = {
-  target: BACKEND_URL,
+const proxyOptions = {  target: BACKEND_URL,
   changeOrigin: true,
-  secure: isProduction, // Only enforce HTTPS in production
+  secure: true, // Always enforce HTTPS for security
   ws: true, // Support WebSockets
   pathRewrite: {
     '^/api': '/api', // Keep /api prefix, making requests go to /api on backend
