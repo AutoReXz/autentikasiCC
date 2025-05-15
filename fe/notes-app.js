@@ -1,6 +1,6 @@
 // Global variables for state management
-let API_URL = '/api'; // Default value
-let BACKEND_URL = ''; // Will be extracted from API_URL
+let API_URL = ''; // Use only one URL, from API_CONFIG
+let BACKEND_URL = ''; // Optionally keep for display/troubleshooting
 let allNotes = [];
 let currentCategory = 'all';
 let currentView = 'grid'; // grid or list
@@ -15,12 +15,11 @@ function showToast(message, type = 'info') {
 
 // Document ready function
 $(document).ready(function() {
-    // Initialize API_URL from utils
+    // Initialize API_URL from API_CONFIG
     API_URL = API_CONFIG.getApiUrl();
-    // Extract BACKEND_URL from API_URL by removing '/api' suffix if present
-    BACKEND_URL = API_URL.endsWith('/api') ? API_URL.substring(0, API_URL.length - 4) : API_URL;
+    BACKEND_URL = API_URL; // No need to strip /api, use as is
     console.log('Notes app initialized with API_URL:', API_URL);
-    console.log('Backend URL extracted as:', BACKEND_URL);
+    console.log('Backend URL set as:', BACKEND_URL);
     
     // Auto connect with a slight delay
     setTimeout(() => {
@@ -50,7 +49,8 @@ function connectToBackend() {
     console.log('Attempting to connect to API at:', apiUrl);
     
     // Test connection and load notes if authenticated
-    testConnection()        .then((response) => {
+    testConnection()
+        .then((response) => {
             console.log('Connection successful, response:', response);
             // Update status
             $('#connectionStatus').text('Connected').removeClass('text-red-400').addClass('text-green-400');
@@ -79,8 +79,10 @@ function connectToBackend() {
                 setTimeout(connectToBackend, 1000);
             } else {
                 showToast('Could not connect to backend. Please check the backend server.', 'error');
-                $('#connectionStatus').text('Disconnected').removeClass('text-green-400').addClass('text-red-400');                $('#notesList').html(`
-                    <div class="col-span-full p-8 bg-red-50 rounded-lg border border-red-200 text-center">                        <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4"></i>
+                $('#connectionStatus').text('Disconnected').removeClass('text-green-400').addClass('text-red-400');
+                $('#notesList').html(`
+                    <div class="col-span-full p-8 bg-red-50 rounded-lg border border-red-200 text-center">
+                        <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-4"></i>
                         <h3 class="text-xl font-bold text-red-700 mb-2">Connection Failed</h3>
                         <p class="text-red-600 mb-4">Could not connect to backend server at: <span class="font-mono font-bold">${BACKEND_URL || 'Unknown'}</span></p>
                         <p class="text-red-600 mb-4">API endpoint attempted: <span class="font-mono font-bold">${API_CONFIG.getApiUrl()}/health</span></p>
@@ -110,13 +112,8 @@ function connectToBackend() {
  * Test connection to the backend
  */
 function testConnection() {
-    // Parse API_URL to handle endpoints correctly
-    const baseUrl = API_CONFIG.getApiUrl();
-    // Avoid double /api in the URL
-    const healthEndpoint = baseUrl.endsWith('/api') 
-        ? `${baseUrl}/health`  // If already ends with /api, just add /health
-        : `${baseUrl}/api/health`; // Otherwise add /api/health
-    
+    // Use API_URL directly for health endpoint
+    const healthEndpoint = `${API_CONFIG.getApiUrl()}/health`;
     console.log('Testing connection to:', healthEndpoint);
     return $.ajax({
         url: healthEndpoint,
