@@ -99,21 +99,22 @@ async function logout() {
     try {
         // Call logout endpoint to invalidate refresh token
         await $.ajax({
-            url: `${API_CONFIG.getApiUrl()}/api/auth/logout`, // Make sure this endpoint is correct
+            url: `${API_CONFIG.getApiUrl()}/api/auth/logout`,
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${accessToken}`
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
             },
             xhrFields: {
                 withCredentials: true // Send cookies with request
             },
             crossDomain: true, // Enable cross-domain requests
-            timeout: 10000 // Add timeout to prevent long-hanging requests
+            contentType: 'application/json',
+            dataType: 'json'
         });
-        console.log('Logout successful');
     } catch (error) {
         console.error('Logout error:', error);
-        // Continue with logout process even if API call fails
+        // Continue with local logout even if API call failed
     } finally {
         // Clear local auth data regardless of API success
         accessToken = null;

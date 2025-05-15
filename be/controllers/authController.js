@@ -201,10 +201,6 @@ const refreshToken = async (req, res) => {
 // Logout user
 const logout = async (req, res) => {
     try {
-        // Set appropriate CORS headers for this specific endpoint
-        res.header('Access-Control-Allow-Origin', req.headers.origin);
-        res.header('Access-Control-Allow-Credentials', 'true');
-        
         // Check if req.cookies exists before attempting to destructure
         const refreshToken = req.cookies?.refreshToken;
         
@@ -219,14 +215,14 @@ const logout = async (req, res) => {
             }
         }
         
-        // Clear cookie with same options as when it was set
-        res.clearCookie('refreshToken', { 
-            httpOnly: true, 
+        // Clear cookie with proper CORS settings for cross-origin requests
+        res.clearCookie('refreshToken', {
+            httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict'
+            sameSite: 'none' // Changed from 'strict' to 'none' to allow cross-site cookie clearing
         });
         
-        res.status(200).json({ message: 'Logged out successfully' });
+        res.json({ message: 'Logged out successfully' });
     } catch (error) {
         console.error('Logout error:', error);
         res.status(500).json({ error: error.message });
