@@ -7,9 +7,41 @@ const dotenv = require('dotenv');
 // Load environment variables from .env file
 dotenv.config();
 
+// Read BACKEND_URL from .env
+const envPath = path.join(__dirname, '.env');
+let BACKEND_URL = process.env.BACKEND_URL;
+if (!BACKEND_URL && fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  const match = envContent.match(/^BACKEND_URL=(.*)$/m);
+  if (match) {
+    BACKEND_URL = match[1].trim();
+  }
+}
+
+// Generate static config.js file for frontend
+const configJsContent = `window.API_CONFIG = {
+  DEFAULT_URL: '${BACKEND_URL}',
+  getApiUrl: function() { return this.DEFAULT_URL; },
+  formatDate: function(dateString) {
+    const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  },
+  showToast: function(message, type = 'info', duration = 3000) {
+    const toast = document.createElement('div');
+    toast.className = \`fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 \${
+      type === 'success' ? 'bg-green-500 text-white' : 
+      type === 'error' ? 'bg-red-500 text-white' : 
+      'bg-blue-500 text-white'
+    }\`;
+    toast.innerHTML = message;
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.remove(); }, duration);
+  }
+};\n`;
+fs.writeFileSync(path.join(__dirname, 'config.js'), configJsContent);
+
 const app = express();
 const PORT = process.env.PORT || 8080;
-const BACKEND_URL = process.env.BACKEND_URL;
 
 // Determine if we're in production
 const isProduction = process.env.NODE_ENV === 'production';
