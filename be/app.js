@@ -15,14 +15,41 @@ const PORT = process.env.PORT || 3000;
 
 // Configure CORS to allow requests from frontend
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:8080', // Use FRONTEND_URL from .env or default
+  origin: function(origin, callback) {
+    const allowedOrigins = [
+      process.env.FRONTEND_URL || 'http://localhost:8080',
+      'https://fe-galang-dot-f-13-450706.uc.r.appspot.com' // Add the specific frontend URL
+    ];
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('Origin not allowed by CORS:', origin);
+      callback(null, true); // Allow all origins for now, but log them
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true // Allow cookies to be sent with requests
 }));
 
 // Add a pre-flight handler for all routes
-app.options('*', cors());
+app.options('*', cors({
+  origin: function(origin, callback) {
+    const allowedOrigins = [
+      process.env.FRONTEND_URL || 'http://localhost:8080',
+      'https://fe-galang-dot-f-13-450706.uc.r.appspot.com'
+    ];
+    
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all origins for now, but later could be restricted
+    }
+  },
+  credentials: true
+}));
 
 app.use(express.json());
 app.use(cookieParser()); // Parse cookies in requests
