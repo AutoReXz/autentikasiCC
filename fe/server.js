@@ -14,14 +14,8 @@ const BACKEND_URL = process.env.BACKEND_URL;
 // Determine if we're in production
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Configure API URL based on environment
-const API_URL = isProduction 
-  ? process.env.BACKEND_URL || 'https://notes-app-api.example.com/api' // Gunakan URL yang disediakan atau default produksi
-  : `${BACKEND_URL}/api`;
-
 console.log(`Environment: ${isProduction ? 'Production' : 'Development'}`);
 console.log(`Backend URL: ${BACKEND_URL}`);
-console.log(`API URL: ${API_URL}`);
 
 // Add CORS headers middleware 
 app.use((req, res, next) => {
@@ -40,7 +34,7 @@ app.use((req, res, next) => {
 app.get('/config.js', (req, res) => {
   res.setHeader('Content-Type', 'application/javascript');
   res.send(`window.API_CONFIG = {
-    DEFAULT_URL: '${API_URL}',
+    DEFAULT_URL: '${BACKEND_URL}',
     getApiUrl: function() {
       console.log('Current API URL:', this.DEFAULT_URL);
       return this.DEFAULT_URL;
@@ -114,14 +108,14 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Inject API URL into HTML response
+// Inject BACKEND_URL into HTML response
 app.get('*', (req, res) => {
   try {
     // Read the HTML file
     let html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
     
-    // Inject the API URL
-    html = html.replace('<%= process.env.API_URL || "/api" %>', API_URL);
+    // Inject the BACKEND_URL
+    html = html.replace('<%= process.env.API_URL || "/api" %>', BACKEND_URL);
     
     // Send the modified HTML
     res.send(html);
