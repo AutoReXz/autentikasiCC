@@ -26,7 +26,7 @@ function checkAuthState() {
 async function register(username, email, password) {
     try {
         const response = await $.ajax({
-            url: `${API_CONFIG.getApiUrl()}/api/auth/register`, // Fixed to match API documentation
+            url: `${API_CONFIG.getApiUrl()}/auth/register`,
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ username, email, password })
@@ -50,7 +50,7 @@ async function register(username, email, password) {
 async function login(username, password) {
     try {
         const response = await $.ajax({
-            url: `${API_CONFIG.getApiUrl()}/api/auth/login`, // Fixed to match API documentation
+            url: `${API_CONFIG.getApiUrl()}/auth/login`,
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ username, password })
@@ -74,7 +74,7 @@ async function login(username, password) {
 async function refreshToken() {
     try {
         const response = await $.ajax({
-            url: `${API_CONFIG.getApiUrl()}/api/auth/refresh-token`, // Fixed to match API documentation
+            url: `${API_CONFIG.getApiUrl()}/auth/refresh-token`,
             method: 'POST',
             xhrFields: {
                 withCredentials: true // Send cookies with request
@@ -99,7 +99,7 @@ async function logout() {
     try {
         // Call logout endpoint to invalidate refresh token
         await $.ajax({
-            url: `${API_CONFIG.getApiUrl()}/api/auth/logout`, // Fixed to match API documentation
+            url: `${API_CONFIG.getApiUrl()}/auth/logout`,
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${accessToken}`

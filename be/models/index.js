@@ -14,7 +14,7 @@ const setupAssociations = () => {
 const initModels = async () => {
     try {
         setupAssociations();
-        await sequelize.sync({ alter: true }); // Use alter:true to make changes without dropping tables
+        await sequelize.sync(); // Sync models with database without altering tables
         console.log('MySQL database models synchronized successfully');
     } catch (error) {
         console.error('Error syncing MySQL database models:', error);
