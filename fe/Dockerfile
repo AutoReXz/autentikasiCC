@@ -23,5 +23,5 @@ ENV PORT=8080
 # Build and prepare for cloud deployment
 RUN npm run build
 
-# Start the optimized cloud server
-CMD ["node", "cloud-server.js"]
+# Start the app using npm
+CMD ["npm", "start"]
