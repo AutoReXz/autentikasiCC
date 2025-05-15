@@ -10,13 +10,18 @@ RUN npm install
 # Copy all frontend files to the container
 COPY . /frontend/
 
-# Expose port for the app
-EXPOSE 3000
+# Expose port for the app (using PORT environment variable)
+EXPOSE 8080
 
 # Set environment variables for production
 ENV NODE_ENV=production
-# Setting the fixed backend API URL to the specific Cloud Run service
-ENV API_URL=https://fe-galang-dot-f-13-450706.uc.r.appspot.com
+# Setting the backend API URL to the Cloud Run service
+ENV BACKEND_URL=https://notes-app-263444552508.us-central1.run.app
+# Exposing port for App Engine
+ENV PORT=8080
 
-# Start the app
-CMD ["npm", "start"]
+# Build and prepare for cloud deployment
+RUN npm run build
+
+# Start the optimized cloud server
+CMD ["node", "cloud-server.js"]
