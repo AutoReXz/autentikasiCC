@@ -1,4 +1,9 @@
 steps:
+  # 0. Copy environment file
+  - name: "gcr.io/cloud-builders/gsutil"
+    args: ["cp", "${_ENV}", ".env"]
+    dir: "be"
+
   # 1. Build Docker image untuk backend
   - name: "gcr.io/cloud-builders/docker"
     args: ["build", "-t", "gcr.io/$PROJECT_ID/notes-app-backend", "."]
