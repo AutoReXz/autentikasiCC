@@ -15,14 +15,17 @@ const PORT = process.env.PORT || 3000;
 
 // Configure CORS to allow requests from frontend
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:8080', // Use FRONTEND_URL from .env or default
+  origin: 'https://fe-galang-dot-f-13-450706.uc.r.appspot.com', // Explicitly set the frontend origin
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true // Allow cookies to be sent with requests
 }));
 
-// Add a pre-flight handler for all routes
-app.options('*', cors());
+// Add a pre-flight handler for OPTIONS requests with the same CORS configuration
+app.options('*', cors({
+  origin: 'https://fe-galang-dot-f-13-450706.uc.r.appspot.com',
+  credentials: true
+}));
 
 app.use(express.json());
 app.use(cookieParser()); // Parse cookies in requests

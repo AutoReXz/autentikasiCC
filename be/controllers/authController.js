@@ -215,8 +215,12 @@ const logout = async (req, res) => {
             }
         }
         
-        // Clear cookie
-        res.clearCookie('refreshToken');
+        // Clear cookie with proper CORS settings for cross-origin requests
+        res.clearCookie('refreshToken', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'none' // Changed from 'strict' to 'none' to allow cross-site cookie clearing
+        });
         
         res.json({ message: 'Logged out successfully' });
     } catch (error) {
