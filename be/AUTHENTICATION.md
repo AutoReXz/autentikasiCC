@@ -1,62 +1,75 @@
-# Authentication Implementation Summary
+# Ringkasan Implementasi Autentikasi
 
-## Features Added
-1. User registration and login with JWT authentication
-2. Access token and refresh token implementation
-3. Secure routes using middleware
-4. User-specific notes (users can only see their own notes)
+## Fitur yang Ditambahkan
+1. Registrasi dan login pengguna dengan autentikasi JWT
+2. Implementasi access token dan refresh token
+3. Rute aman menggunakan middleware
+4. Notes khusus pengguna (pengguna hanya dapat melihat catatan mereka sendiri)
 
-## Files Created/Modified
+## File yang Dibuat/Dimodifikasi
 
-### New Files
-- `models/user.js`: User model with password hashing
-- `controllers/authController.js`: Authentication logic (register, login, refresh token, logout)
-- `middleware/authMiddleware.js`: JWT validation middleware
-- `routes/authRoutes.js`: Authentication API endpoints
-- `utils/generate-jwt-secret.js`: Utility to generate secure JWT secrets
+### File Baru
+- `models/user.js`: Model pengguna dengan hashing password
+- `controllers/authController.js`: Logika autentikasi (register, login, refresh token, logout)
+- `middleware/authMiddleware.js`: Middleware validasi JWT
+- `routes/authRoutes.js`: Endpoint API autentikasi
+- `utils/generate-jwt-secret.js`: Utilitas untuk menghasilkan JWT secret yang aman
 
-### Modified Files
-- `models/index.js`: Added User model and associations
-- `models/note.js`: Added userId field for association with users
-- `controllers/noteController.js`: Added user filtering to all note operations
-- `routes/noteRoutes.js`: Protected routes with authentication middleware
-- `app.js`: Added auth routes and cookie parser
-- `package.json`: Added new dependencies and scripts
-- `README.md`: Updated with authentication documentation
-- `.env`: Added JWT secrets
+### File yang Dimodifikasi
+- `models/index.js`: Menambahkan model User dan asosiasi
+- `models/note.js`: Menambahkan field userId untuk asosiasi dengan pengguna
+- `controllers/noteController.js`: Menambahkan filter pengguna ke semua operasi note
+- `routes/noteRoutes.js`: Rute yang dilindungi dengan middleware autentikasi
+- `app.js`: Menambahkan rute auth dan cookie parser
+- `package.json`: Menambahkan dependensi dan script baru
+- `README.md`: Diperbarui dengan dokumentasi autentikasi
+- `.env`: Menambahkan JWT secrets
 
-## API Endpoints
+## Endpoint API
 
-### Authentication
-- `POST /api/auth/register`: Create new user account
-- `POST /api/auth/login`: Authenticate user and receive tokens
-- `POST /api/auth/refresh-token`: Get new access token using refresh token
-- `POST /api/auth/logout`: Invalidate refresh token
-- `GET /api/auth/me`: Get current authenticated user info
+### Autentikasi
+- `POST /api/auth/register`: Membuat akun pengguna baru
+- `POST /api/auth/login`: Mengautentikasi pengguna dan menerima token
+- `POST /api/auth/refresh-token`: Mendapatkan access token baru menggunakan refresh token
+- `POST /api/auth/logout`: Membatalkan refresh token
+- `GET /api/auth/me`: Mendapatkan informasi pengguna terautentikasi saat ini
 
-### Notes (All now require authentication)
-- `GET /api/notes`: Get all notes for authenticated user
-- `POST /api/notes`: Create a new note
-- `GET /api/notes/:id`: Get a specific note
-- `PUT /api/notes/:id`: Update a note
-- `DELETE /api/notes/:id`: Delete a note
-- `GET /api/notes/category/:category`: Get notes by category
+### Notes (Semua sekarang memerlukan autentikasi)
+- `GET /api/notes`: Mendapatkan semua catatan untuk pengguna terautentikasi
+- `POST /api/notes`: Membuat catatan baru
+- `GET /api/notes/:id`: Mendapatkan catatan tertentu
+- `PUT /api/notes/:id`: Memperbarui catatan
+- `DELETE /api/notes/:id`: Menghapus catatan
+- `GET /api/notes/category/:category`: Mendapatkan catatan berdasarkan kategori
 
-## How It Works
+## Cara Kerja
 
-1. **Registration**: User account is created with hashed password
-2. **Login**: User provides credentials and receives:
-   - Access token (short-lived, 15 minutes)
-   - Refresh token (long-lived, 7 days) stored in HTTP-only cookie
-3. **API Access**:
-   - Client includes access token in Authorization header
-   - Server validates token before processing requests
-4. **Token Refresh**:
-   - When access token expires, client uses refresh token to get new one
-   - Refresh tokens are stored in the database and invalidated on logout
-5. **Security Measures**:
-   - Passwords hashed with bcrypt
-   - Tokens signed with secure secrets
-   - HTTP-only cookies for refresh tokens
-   - Protected routes require valid authentication
-   - User data isolation (users can only access their own notes)
+1. **Registrasi**: Akun pengguna dibuat dengan password yang di-hash
+2. **Login**: Pengguna memberikan kredensial dan menerima:
+   - Access token (jangka pendek, 15 menit)
+   - Refresh token (jangka panjang, 7 hari) disimpan dalam cookie HTTP-only
+3. **Akses API**:
+   - Klien menyertakan access token di header Authorization
+   - Server memvalidasi token sebelum memproses permintaan
+4. **Pembaruan Token**:
+   - Ketika access token kedaluwarsa, klien menggunakan refresh token untuk mendapatkan yang baru
+   - Refresh token disimpan dalam database dan dibatalkan saat logout
+5. **Langkah-langkah Keamanan**:
+   - Password di-hash dengan bcrypt
+   - Token ditandatangani dengan secret yang aman
+   - Cookie HTTP-only untuk refresh token
+   - Rute terproteksi memerlukan autentikasi yang valid
+   - Isolasi data pengguna (pengguna hanya dapat mengakses catatan mereka sendiri)
+
+## Variabel Lingkungan
+
+Variabel lingkungan yang diperlukan untuk autentikasi disimpan dalam file `.env`:
+
+```
+JWT_SECRET=kunci_rahasia_jwt_anda
+JWT_REFRESH_SECRET=kunci_rahasia_refresh_token_anda
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+```
+
+Pastikan untuk tidak menyertakan file `.env` dalam repositori kode.

@@ -1,70 +1,95 @@
-# Notes App Authentication Features
+# Fitur Autentikasi Aplikasi Notes
 
-This application now includes complete JWT-based authentication with the following features:
+Aplikasi ini dilengkapi dengan sistem autentikasi berbasis JWT dengan fitur-fitur berikut:
 
-## Backend Features
+## Fitur Backend
 
-1. User Registration and Login API
-2. JWT Authentication with Access and Refresh Tokens
-3. Password Hashing with bcrypt
-4. Protected Routes for Note Operations
-5. User-specific Notes (users can only access their own notes)
-6. Secure Token Management with HTTP-only Cookies
-7. Automatic Token Refresh
+1. API Registrasi dan Login Pengguna
+2. Autentikasi JWT dengan Access Token dan Refresh Token
+3. Hashing Password dengan bcrypt
+4. Rute Terproteksi untuk Operasi Notes
+5. Notes Spesifik Pengguna (pengguna hanya dapat mengakses catatan miliknya sendiri)
+6. Pengelolaan Token yang Aman dengan HTTP-only Cookies
+7. Pembaruan Token Otomatis
 
-## Frontend Features
+## Fitur Frontend
 
-1. Login and Registration Forms
-2. Token Storage with localStorage
-3. Authenticated API Requests
-4. Automatic Token Refresh when Expired
-5. User Profile Display
-6. Session Management
-7. Conditional UI based on Authentication Status
+1. Form Login dan Registrasi
+2. Penyimpanan Token dengan localStorage
+3. Permintaan API Terautentikasi
+4. Pembaruan Token Otomatis saat Kadaluarsa
+5. Tampilan Profil Pengguna
+6. Pengelolaan Sesi
+7. UI Kondisional berdasarkan Status Autentikasi
 
-## API Endpoints
+## Endpoint API
 
-### Authentication
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Login and get tokens
-- `POST /api/auth/refresh-token` - Refresh access token using refresh token
-- `POST /api/auth/logout` - Logout and invalidate tokens
-- `GET /api/auth/me` - Get current authenticated user info
+### Autentikasi
+- `POST /api/auth/register` - Mendaftarkan pengguna baru
+- `POST /api/auth/login` - Login dan mendapatkan token
+- `POST /api/auth/refresh-token` - Memperbaharui access token menggunakan refresh token
+- `POST /api/auth/logout` - Logout dan membatalkan token
+- `GET /api/auth/me` - Mendapatkan informasi pengguna terautentikasi saat ini
 
-### Notes (Protected Routes)
-- `GET /api/notes` - Get all notes for authenticated user
-- `GET /api/notes/:id` - Get a specific note
-- `POST /api/notes` - Create a new note
-- `PUT /api/notes/:id` - Update a note
-- `DELETE /api/notes/:id` - Delete a note
-- `GET /api/notes/category/:category` - Get notes by category
+### Notes (Rute Terproteksi)
+- `GET /api/notes` - Mendapatkan semua catatan untuk pengguna terautentikasi
+- `GET /api/notes/:id` - Mendapatkan catatan tertentu
+- `POST /api/notes` - Membuat catatan baru
+- `PUT /api/notes/:id` - Memperbarui catatan
+- `DELETE /api/notes/:id` - Menghapus catatan
+- `GET /api/notes/category/:category` - Mendapatkan catatan berdasarkan kategori
 
-## Authentication Flow
+## Alur Autentikasi
 
-1. User registers or logs in
-2. Server returns an access token (short-lived) and a refresh token (long-lived in HTTP-only cookie)
-3. Access token is stored in localStorage and used for all API requests
-4. When access token expires, the frontend automatically uses the refresh token to get a new access token
-5. If refresh fails, user is redirected to login
+1. Pengguna mendaftar atau login
+2. Server mengembalikan access token (jangka pendek) dan refresh token (jangka panjang dalam cookie HTTP-only)
+3. Access token disimpan dalam localStorage dan digunakan untuk semua permintaan API
+4. Ketika access token kedaluwarsa, frontend secara otomatis menggunakan refresh token untuk mendapatkan access token baru
+5. Jika refresh gagal, pengguna diarahkan kembali ke halaman login
 
-## Security Features
+## Fitur Keamanan
 
-1. Passwords are hashed with bcrypt
-2. JWT tokens with proper expiry times
-3. HTTP-only cookies for refresh tokens
-4. CORS configured for secure communication
-5. Validation and error handling
-6. Protection against unauthorized access
+1. Password di-hash dengan bcrypt
+2. Token JWT dengan waktu kedaluwarsa yang tepat
+3. Cookie HTTP-only untuk refresh token
+4. CORS dikonfigurasi untuk komunikasi yang aman
+5. Validasi dan penanganan kesalahan
+6. Perlindungan terhadap akses yang tidak sah
 
-## Implementation Details
+## Detail Implementasi
 
-### User Model
-- Username, email, password (hashed), and refresh token storage
+### Model Pengguna
+- Username, email, password (di-hash), dan penyimpanan refresh token
 
-### Authentication Middleware
-- Token validation and verification
-- Attaching user info to request objects
+### Middleware Autentikasi
+- Validasi dan verifikasi token
+- Melampirkan informasi pengguna ke objek permintaan
 
-### API Error Handling
-- Proper error responses for various authentication scenarios
-- Clear and descriptive error messages
+### Penanganan Kesalahan API
+- Respons kesalahan yang tepat untuk berbagai skenario autentikasi
+- Pesan kesalahan yang jelas dan deskriptif
+
+## Keamanan Data Rahasia
+
+Semua data rahasia (seperti JWT secret, kredensial database) disimpan di file `.env` yang tidak disertakan dalam repository. Data yang disimpan dalam file `.env` meliputi:
+
+```
+DB_HOST=host_database
+DB_USER=user_database
+DB_PASSWORD=password_database
+DB_NAME=nama_database
+JWT_SECRET=kunci_rahasia_jwt
+JWT_REFRESH_SECRET=kunci_rahasia_refresh_token
+JWT_EXPIRES_IN=1h
+JWT_REFRESH_EXPIRES_IN=7d
+PORT=3000
+```
+
+## Penggunaan JWT
+
+JWT (JSON Web Token) digunakan untuk mengamankan komunikasi antara frontend dan backend. Implementasi JWT melibatkan:
+
+1. Access token: Token jangka pendek (1 jam) untuk mengakses API terproteksi
+2. Refresh token: Token jangka panjang (7 hari) untuk mendapatkan access token baru
+3. Verifikasi token di setiap permintaan API terproteksi
+4. Penggunaan middleware untuk memvalidasi token
