@@ -1,7 +1,7 @@
 steps:
   # Step 1: Mengambil file konfigurasi dari bucket
   - name: 'gcr.io/cloud-builders/gsutil'
-    args: ['cp', '${_FE_ENV}', 'config.js']
+    args: ["cp", "${_ENV}", ".env"]
     dir: 'fe'
     
   # Step 2: Deploy langsung ke App Engine tanpa membangun Docker image
